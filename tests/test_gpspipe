@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+
+import json
+
+test_data = {
+    "class": "TPV",
+    "device": "/dev/ttyACM0",
+    "mode": 3,
+    "time": "2023-06-14T17:32:03.000Z",
+    "leapseconds": 18,
+    "ept": 0.005,
+    "lat": 37.760050100,
+    "lon": -122.497702900,
+    "altHAE": 20.6260,
+    "altMSL": 50.4830,
+    "alt": 50.4830,
+    "epx": 29.761,
+    "epy": 55.948,
+    "epv": 13.519,
+    "track": 359.4589,
+    "magtrack": 12.7281,
+    "magvar": 13.3,
+    "speed": 0.027,
+    "climb": 0.000,
+    "eps": 1.83,
+    "epc": 27.04,
+    "ecefx": -2712542.94,
+    "ecefy": -4258214.64,
+    "ecefz": 3884445.11,
+    "ecefvx": 0.31,
+    "ecefvy": 0.53,
+    "ecefvz": 0.77,
+    "ecefpAcc": 30.17,
+    "ecefvAcc": 1.83,
+    "geoidSep": -29.900,
+    "eph": 21.721,
+    "sep": 103.170,
+}
+
+print(json.dumps(test_data))
