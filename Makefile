@@ -36,8 +36,13 @@ uninstall:
 
 reinstall: uninstall install
 
-publish:
-	python3 setup.py publish
+dist: build
+
+build:
+	python3 -m build
+
+publish: dist
+	twine upload dist/*
 
 clean:
 	@rm -rf *.egg* build dist *.py[oc] */*.py[co] cover doctest_pypi.cfg \
