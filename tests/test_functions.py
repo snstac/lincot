@@ -16,7 +16,7 @@
 # limitations under the License.
 #
 
-"""OmegaCoT Function Tests."""
+"""LINCOT Function Tests."""
 
 import io
 import xml.etree.ElementTree as ET
@@ -70,12 +70,12 @@ def sample_gps_info():
 
 
 def test_gpspipe_to_cot_xml(sample_gps_info):
+    """Test converting GPS Info to CoT XML."""
     cot = gpspipe_to_cot_xml(sample_gps_info)
     assert isinstance(cot, ET.Element)
     assert cot.tag == "event"
     assert cot.attrib["version"] == "2.0"
     assert cot.attrib["type"] == "a-f-G-E-S"
-    # assert cot.attrib["uid"] == "MMSI-366892000"
 
     point = cot.findall("point")
     assert point[0].tag == "point"
@@ -92,7 +92,7 @@ def test_gpspipe_to_cot_xml(sample_gps_info):
 
 
 def test_gpspipe_to_cot(sample_gps_info):
-    """Test converting Omega GPS Info to CoT."""
+    """Test converting GPS Info to CoT."""
     cot: bytes = gpspipe_to_cot(sample_gps_info)
     assert b"a-f-G-E-S" in cot
     assert b"LINCOT" in cot

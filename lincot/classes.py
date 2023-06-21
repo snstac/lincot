@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-"""OmegaCoT Class Definitions."""
+"""LINCOT Class Definitions."""
 
 import asyncio
 import json

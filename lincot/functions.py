@@ -37,7 +37,7 @@ def create_tasks(config: Union[dict, SectionProxy], clitool: pytak.CLITool) -> s
         2) Transmit Queue Worker
 
     This application adds:
-        `lincot.OmegaWorker`
+        `lincot.LincotWorker`
 
     Parameters
     ----------
@@ -59,7 +59,7 @@ def gpspipe_to_cot_xml(
     gps_info: dict,
     config: Union[dict, SectionProxy, None] = None,
 ) -> Optional[Element]:
-    """Convert Onion Omega GPS Info to Cursor on Target.
+    """Convert GPS Info to Cursor on Target.
 
     Parameters
     ----------

@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 
-"""OmegaCoT Constants."""
+"""LINCOT Constants."""
 
 __author__ = "Greg Albrecht <gba@snstac.com>"
 __copyright__ = "Copyright 2023 Sensors & Signals LLC"
