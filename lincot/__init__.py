@@ -19,18 +19,24 @@
 :source: <https://github.com/snstac/lincot>
 """
 
-from .constants import (
-    DEFAULT_COT_TYPE,
-    DEFAULT_COT_STALE,
-    DEFAULT_POLL_INTERVAL,
-    DEFAULT_GPS_INFO_CMD,
-)
-
-from .functions import gpspipe_to_cot, create_tasks  # NOQA
-
-from .classes import LincotWorker  # NOQA
-
-__version__ = "1.0.2-beta2"
+__version__ = "1.0.2-beta3"
 __author__ = "Greg Albrecht <gba@snstac.com>"
 __copyright__ = "Copyright 2023 Sensors & Signals LLC"
 __license__ = "Apache License, Version 2.0"
+
+
+# Python 3.6 test/build work-around:
+try:
+    from .constants import (
+        DEFAULT_COT_TYPE,
+        DEFAULT_COT_STALE,
+        DEFAULT_POLL_INTERVAL,
+        DEFAULT_GPS_INFO_CMD,
+    )
+
+    from .functions import gpspipe_to_cot, create_tasks  # NOQA
+
+    from .classes import LincotWorker  # NOQA
+except ImportError:
+    import warnings
+    warnings.warn("Unable to import required modules, ignoring (Python 3.6 build work-around).")
