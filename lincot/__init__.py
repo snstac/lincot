@@ -30,7 +30,7 @@ from .functions import gpspipe_to_cot, create_tasks  # NOQA
 
 from .classes import LincotWorker  # NOQA
 
-__version__ = "1.0.2-beta1"
+__version__ = "1.0.2-beta2"
 __author__ = "Greg Albrecht <gba@snstac.com>"
 __copyright__ = "Copyright 2023 Sensors & Signals LLC"
 __license__ = "Apache License, Version 2.0"
