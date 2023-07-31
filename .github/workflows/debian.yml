@@ -26,13 +26,11 @@ jobs:
 
       - name: Build Debian/Apt sdist_dsc
         run: |
-          python3 -m pip install .
           rm -Rf deb_dist/*
           python3 setup.py --command-packages=stdeb.command sdist_dsc
 
       - name: Build Debian/Apt bdist_deb
         run: |
-          python3 -m pip install .
           export REPO_NAME=$(echo ${{ github.repository }} | awk -F"/" '{print $2}')
           python3 setup.py --command-packages=stdeb.command bdist_deb
           ls -al deb_dist/
