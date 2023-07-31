@@ -7,9 +7,7 @@ on:
       - '*'
 
 jobs:
-  publish-to-pypi:
-    permissions:
-      id-token: write
+  deploy:
 
     runs-on: ubuntu-20.04
 
