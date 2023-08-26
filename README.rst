@@ -12,9 +12,9 @@ installed several ways.
 
 Installing as a Debian/Ubuntu Package [Use Me!]::
 
-    $ wget https://github.com/ampledata/pytak/releases/latest/download/python3-pytak_latest_all.deb
+    $ wget https://github.com/snstac/pytak/releases/latest/download/python3-pytak_latest_all.deb
     $ sudo apt install -f ./python3-pytak_latest_all.deb
-    $ wget https://github.com/ampledata/lincot/releases/latest/download/python3-lincot_latest_all.deb
+    $ wget https://github.com/snstac/lincot/releases/latest/download/python3-lincot_latest_all.deb
     $ sudo apt install -f ./python3-lincot_latest_all.deb
 
 Install from the Python Package Index [Alternative]::
@@ -24,10 +24,9 @@ Install from the Python Package Index [Alternative]::
 
 Install from this source tree [Developer]::
 
-    $ git clone https://github.com/ampledata/lincot.git
+    $ git clone https://github.com/snstac/lincot.git
     $ cd lincot/
     $ python3 -m pip install .
-
 
 Usage
 =====
@@ -48,7 +47,7 @@ Command-line options::
 
 Configuration options:
     ``COT_URL`` : str,  default: udp://239.2.3.1:6969
-        URL to CoT destination. Must be a URL, e.g. ``tcp://1.2.3.4:1234`` or ``tls://...:1234``, etc. See `PyTAK <https://github.com/ampledata/pytak#configuration-parameters>`_ for options, including TLS support.
+        URL to CoT destination. Must be a URL, e.g. ``tcp://1.2.3.4:1234`` or ``tls://...:1234``, etc. See `PyTAK <https://github.com/snstac/pytak#configuration-parameters>`_ for options, including TLS support.
     ``COT_STALE`` : int, default: 3600
         CoT Stale period ("timeout"), in seconds. Default `3600` seconds (1 hour).
     ``COT_TYPE`` : str, default: a-u-S-X-M
