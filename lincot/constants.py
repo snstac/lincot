@@ -25,4 +25,4 @@ DEFAULT_COT_STALE: str = "3600"  # 1 hour
 DEFAULT_COT_TYPE: str = "a-f-G-E-S"
 
 DEFAULT_POLL_INTERVAL: int = 61
-DEFAULT_GPS_INFO_CMD: str = "gpspipe --json -n 5"
+DEFAULT_GPS_INFO_CMD: str = "gpspipe -w -n 5"
