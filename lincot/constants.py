@@ -20,9 +20,14 @@ __author__ = "Greg Albrecht <gba@snstac.com>"
 __copyright__ = "Copyright 2023 Sensors & Signals LLC"
 __license__ = "Apache License, Version 2.0"
 
-
+# Default CoT stale period (in seconds).
 DEFAULT_COT_STALE: str = "3600"  # 1 hour
+
+# Default CoT event type ("marker type").
 DEFAULT_COT_TYPE: str = "a-f-G-E-S"
 
+# Default poll interval (in seconds) for GPS Info data.
 DEFAULT_POLL_INTERVAL: int = 61
+
+# Default command to retrieve GPS Info data.
 DEFAULT_GPS_INFO_CMD: str = "gpspipe -w -n 5"

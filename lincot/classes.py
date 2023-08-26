@@ -31,16 +31,64 @@ __license__ = "Apache License, Version 2.0"
 
 
 class LincotWorker(pytak.QueueWorker):
-    """LincotWorker Class."""
+    """A worker that reads GPS information and outputs CoT.
+
+    This worker reads GPS information using a command specified in the configuration,
+    and converts it to CoT (Cursor on Target) format using the `lincot.gpspipe_to_cot` function.
+    The resulting CoT event is then put into a queue for further processing.
+
+    Attributes:
+        gps_info_cmd (str): The command to use for reading GPS information.
+            This is read from the configuration, or defaults to `lincot.DEFAULT_GPS_INFO_CMD`.
+    """
 
     async def handle_data(self, data) -> None:
-        """Handle received GPS Info data."""
+        """
+        Handle received GPS Info data.
+
+        Args:
+            data: The GPS Info data to be handled.
+
+        Returns:
+            None
+
+        Example:
+            >>> data = b'$GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,,*47'
+            >>> await handle_data(data)
+        """
         event: Optional[bytes] = lincot.gpspipe_to_cot(data, self.config)
         if event:
             await self.put_queue(event)
 
     async def get_gps_info(self) -> None:
-        """Get GPS Info data."""
+        """Get GPS Info data.
+
+        This method retrieves GPS information using the `gps_info_cmd` command and parses the data to extract the
+        relevant information. If no GPS data is found, the method returns `None`.
+
+        Example data:
+        {
+            "class": "TPV",
+            "device": "/dev/ttyUSB0",
+            "mode": 3,
+            "time": "2021-10-01T12:34:56.000Z",
+            "ept": 0.005,
+            "lat": 37.123456,
+            "lon": -122.123456,
+            "alt": 123.4,
+            "epx": 0.005,
+            "epy": 0.005,
+            "epv": 0.005,
+            "track": 0.0,
+            "speed": 0.0,
+            "climb": 0.0,
+            "eps": 34.11,
+            "epc": 23.45
+        }
+
+        Returns:
+            None
+        """
         gpspipe_data: Optional[str] = None
         gps_data: Optional[str] = None
         with os.popen(self.gps_info_cmd) as gps_info_cmd:
@@ -48,7 +96,7 @@ class LincotWorker(pytak.QueueWorker):
 
         if not gpspipe_data:
             return
-    
+
         if "\n" in gpspipe_data:
             for data in gpspipe_data.split("\n"):
                 if "TPV" in data:

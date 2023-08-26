@@ -59,16 +59,39 @@ def gpspipe_to_cot_xml(
     gps_info: dict,
     config: Union[dict, SectionProxy, None] = None,
 ) -> Optional[Element]:
-    """Convert GPS Info to Cursor on Target.
+    """
+    Convert GPS Info to Cursor on Target.
 
     Parameters
     ----------
-    gps_info : GPS Info from the command line.
-    config : Configuration parameters for LINCOT.
+    gps_info : dict
+        GPS Info from the command line.
+    config : Union[dict, SectionProxy, None], optional
+        Configuration parameters for LINCOT, by default None.
 
     Returns
     -------
-    A Cursor on Target <event/>.
+    Optional[Element]
+        A Cursor on Target <event/>.
+
+    Examples
+    --------
+    >>> gps_info = {
+    ...     "class": "TPV",
+    ...     "lat": 37.7749,
+    ...     "lon": -122.4194,
+    ...     "altHAE": 10,
+    ...     "track": 90,
+    ...     "speed": 10
+    ... }
+    >>> config = {
+    ...     "COT_TYPE": "a-f-G-U-C",
+    ...     "COT_STALE": 60,
+    ...     "CALLSIGN": "LINCOT",
+    ...     "COT_HOST_ID": "1234"
+    ... }
+    >>> gpspipe_to_cot_xml(gps_info, config)
+    <Element 'event' at 0x7f9a8c7f7c00>
     """
     config = config or {}
     remarks_fields: list = []
@@ -138,15 +161,29 @@ def gpspipe_to_cot(
     config: Union[dict, SectionProxy, None] = None,
     known_gps_info: Optional[dict] = None,
 ) -> Optional[bytes]:
-    """Convert AIS to CoT XML and return it as 'TAK Protocol, Version 0'.
+    """
+    Convert GPS information to Cursor on Target (CoT) XML and return it as 'TAK Protocol, Version 0'.
 
-    'TAK Protocol, Version 0' being:
-     1. XML Declaration.
-     2. Newline.
-     3. Cursor on Target <event/> Element.
-     4. Newline.
+    Args:
+        gps_info (dict): A dictionary containing GPS information.
+        config (Union[dict, SectionProxy, None], optional): A dictionary or configparser.SectionProxy containing configuration information. Defaults to None.
+        known_gps_info (Optional[dict], optional): A dictionary containing previously known GPS information. Defaults to None.
+
+    Returns:
+        Optional[bytes]: The CoT XML as bytes, or None if the conversion failed.
+
+    Examples:
+        >>> gps_info = {'lat': 37.7749, 'lon': -122.4194, 'alt': 0.0, 'speed': 0.0, 'heading': 0.0, 'mode': 3}
+        >>> gpspipe_to_cot(gps_info)
+        b'<?xml version="1.0" encoding="UTF-8"?>\n<event version="2.0" uid="GPS-0" type="a-f-G-U-C" time="20220101T000000Z" start="20220101T000000Z" stale="20220101T000000Z" how="m-g" lat="37.7749" lon="-122.4194" hae="0.0" ce="9999999.0" le="9999999.0" />\n'
+
+        >>> gps_info = {'lat': 37.7749, 'lon': -122.4194, 'alt': 0.0, 'speed': 0.0, 'heading': 0.0, 'mode': 3}
+        >>> config = {'callsign': 'MYCALLSIGN'}
+        >>> gpspipe_to_cot(gps_info, config)
+        b'<?xml version="1.0" encoding="UTF-8"?>\n<event version="2.0" uid="GPS-0" type="a-f-G-U-C" time="20220101T000000Z" start="20220101T000000Z" stale="20220101T000000Z" how="m-g" lat="37.7749" lon="-122.4194" hae="0.0" ce="9999999.0" le="9999999.0" callsign="MYCALLSIGN" />\n'
     """
     cot: Optional[Element] = gpspipe_to_cot_xml(gps_info, config)
     return (
         b"\n".join([pytak.DEFAULT_XML_DECLARATION, tostring(cot), b""]) if cot else None
     )
+
