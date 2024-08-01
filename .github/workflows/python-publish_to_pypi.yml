@@ -1,9 +1,6 @@
 # This workflow will upload a Python Package using Twine when a release is created
 name: Publish package to PyPI
 
-permissions:
-  id-token: write
-
 on:
   push:
     tags:

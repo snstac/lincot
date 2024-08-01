@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 Sensors & Signals LLC
+# Copyright Sensors & Signals LLC https://www.snstac.com/
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,9 @@
 # limitations under the License.
 #
 
-"""LINCOT: Linux GPS to TAK Gateway.
+"""LINCOT: Linux GPS to TAK Gateway."""
 
-:source: <https://github.com/snstac/lincot>
-"""
-
-__version__ = "1.0.3"
-__author__ = "Greg Albrecht <gba@snstac.com>"
-__copyright__ = "Copyright 2023 Sensors & Signals LLC"
-__license__ = "Apache License, Version 2.0"
-
+__version__ = "1.0.4-beta1"
 
 # Python 3.6 test/build work-around:
 try:
@@ -39,4 +32,7 @@ try:
     from .classes import LincotWorker  # NOQA
 except ImportError:
     import warnings
-    warnings.warn("Unable to import required modules, ignoring (Python 3.6 build work-around).")
+
+    warnings.warn(
+        "Unable to import required modules, ignoring (Python 3.6 build work-around)."
+    )

@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# lincot.service from https://github.com/snstac/lincot
+#
+# lincot service for systemd
 #
 # Copyright Sensors & Signals LLC https://www.snstac.com/
 #
@@ -14,15 +15,25 @@
 # limitations under the License.
 #
 
-"""LINCOT Command Line."""
+[Unit]
+Description=lincot: GPS in TAK
+Documentation=https://github.com/snstac/lincot
+Wants=network.target
+After=network.target
 
-import pytak
+[Service]
+User=lincot
+ExecStart=/usr/bin/lincot
+RuntimeDirectory=lincot
+SyslogIdentifier=lincot
+EnvironmentFile=/etc/default/lincot
+Type=simple
+Restart=always
+RestartSec=20
+StartLimitInterval=1
+StartLimitBurst=100
+RestartPreventExitStatus=64
+Nice=-1
 
-
-def main() -> None:
-    """CLI tool boilerplate."""
-    pytak.cli(__name__.split(".", maxsplit=1)[0])
-
-
-if __name__ == "__main__":
-    main()
+[Install]
+WantedBy=default.target

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Copyright 2023 Sensors & Signals LLC
+# Copyright Sensors & Signals LLC https://www.snstac.com/
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,10 +23,6 @@ from xml.etree.ElementTree import tostring, Element
 
 import pytak
 import lincot
-
-__author__ = "Greg Albrecht <gba@snstac.com>"
-__copyright__ = "Copyright 2023 Sensors & Signals LLC"
-__license__ = "Apache License, Version 2.0"
 
 
 def create_tasks(config: Union[dict, SectionProxy], clitool: pytak.CLITool) -> set:
