@@ -60,16 +60,22 @@ class LincotWorker(pytak.QueueWorker):
 
     async def run(self, number_of_iterations=-1) -> None:
         """Run this Thread, reads GPS Info & outputs CoT."""
-        self._logger.info("Sending to: %s", self.config.get("COT_URL"))
+        cot_url: str = self.config.get("COT_URL")
+        if not cot_url:
+            self._logger.error("COT_URL not set, exiting.")
+            return
+        self._logger.info("Sending to: %s", cot_url)
 
         poll_interval: int = int(
             self.config.get("POLL_INTERVAL", lincot.DEFAULT_POLL_INTERVAL)
         )
         self.gps_info_cmd = (
-            self.config.get("GPS_INFO_CMD") or lincot.DEFAULT_GPS_INFO_CMD
+            self.config.get("GPS_INFO_CMD", lincot.DEFAULT_GPS_INFO_CMD)
         )
 
         while 1:
-            self._logger.info("Polling every %ss: %s", poll_interval, self.gps_info_cmd)
+            self._logger.info("Sending position from %s to %s every %s seconds.", 
+                              self.gps_info_cmd, cot_url, poll_interval)
+
             await self.get_gps_info()
             await asyncio.sleep(poll_interval)
