@@ -88,6 +88,10 @@ deb_custom:
 	cp debian/$(REPO_NAME).conf $(wildcard deb_dist/*/debian)/$(REPO_NAME).default
 	cp debian/$(REPO_NAME).postinst $(wildcard deb_dist/*/debian)/$(REPO_NAME).postinst
 	cp debian/$(REPO_NAME).service $(wildcard deb_dist/*/debian)/$(REPO_NAME).service
+	cp debian/$(REPO_NAME).preinst $(wildcard deb_dist/*/debian)/$(REPO_NAME).preinst
+	cp debian/$(REPO_NAME).prerm $(wildcard deb_dist/*/debian)/$(REPO_NAME).prerm
+	cp debian/$(REPO_NAME).postrm $(wildcard deb_dist/*/debian)/$(REPO_NAME).postrm
+	cp -pr debian/tests* $(wildcard deb_dist/*/debian)/
 
 bdist_deb: deb_dist deb_custom
 	cd deb_dist/$(REPO_NAME)-*/ && dpkg-buildpackage -rfakeroot -uc -us
