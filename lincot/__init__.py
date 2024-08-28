@@ -16,7 +16,7 @@
 
 """LINCOT: Linux GPS to TAK Gateway."""
 
-__version__ = "1.1.0-beta1"
+__version__ = "1.1.0"
 
 # Python 3.6 test/build work-around:
 try:
