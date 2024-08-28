@@ -93,6 +93,7 @@ deb_custom:
 	cp debian/$(REPO_NAME).postrm $(wildcard deb_dist/*/debian)/$(REPO_NAME).postrm
 	cp -pr debian/tests-* $(wildcard deb_dist/)/
 	cp CHANGELOG.md $(wildcard deb_dist/*/debian)/changelog
+	cp CHANGELOG.md debian/changelog
 
 bdist_deb: deb_dist deb_custom
 	cd deb_dist/$(REPO_NAME)-*/ && dpkg-buildpackage -rfakeroot -uc -us
