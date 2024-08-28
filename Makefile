@@ -91,7 +91,7 @@ deb_custom:
 	# cp debian/$(REPO_NAME).preinst $(wildcard deb_dist/*/debian)/$(REPO_NAME).preinst
 	# cp debian/$(REPO_NAME).prerm $(wildcard deb_dist/*/debian)/$(REPO_NAME).prerm
 	# cp debian/$(REPO_NAME).postrm $(wildcard deb_dist/*/debian)/$(REPO_NAME).postrm
-	# cp -pr debian/tests-* $(wildcard deb_dist/)/
+	cp -pr debian/tests-* $(wildcard deb_dist/)/
 	# cp CHANGELOG.md $(wildcard deb_dist/*/debian)/changelog
 	# cp CHANGELOG.md debian/changelog
 
