@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="addon">
+  <id>org.cockpit_project.lincot</id>
+  <metadata_license>Apache-2.0</metadata_license>
+  <name>LINCOT</name>
+  <summary>Cockpit module for LINCOT</summary>
+  <description>
+    <p>Manage LINCOT, a Linux edge node position gateway for TAK.</p>
+  </description>
+  <extends>org.cockpit_project.lincot</extends>
+  <launchable type="cockpit-manifest">lincot</launchable>
+  <url type="homepage">https://github.com/snstac/cockpit-lincot</url>
+  <url type="bugtracker">https://github.com/snstac/cockpit-lincot/issues</url>
+</component>

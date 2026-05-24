@@ -18,17 +18,13 @@
 
 """LINCOT Function Tests."""
 
-import io
 import xml.etree.ElementTree as ET
 
 import pytest
 
-from lincot.functions import gpspipe_to_cot, gpspipe_to_cot_xml
-
-
-__author__ = "Greg Albrecht <oss@undef.net>"
-__copyright__ = "Copyright 2023 Greg Albrecht"
-__license__ = "Apache License, Version 2.0"
+from lincot.functions import gpspipe_to_cot, position_to_cot_xml
+from lincot.identity import get_callsign, get_uid
+from lincot.position import static_position_configured, static_tpv
 
 
 @pytest.fixture
@@ -38,61 +34,82 @@ def sample_gps_info():
         "device": "/dev/ttyACM0",
         "mode": 3,
         "time": "2023-06-14T17:32:03.000Z",
-        "leapseconds": 18,
-        "ept": 0.005,
         "lat": 37.760050100,
         "lon": -122.497702900,
         "altHAE": 20.6260,
-        "altMSL": 50.4830,
-        "alt": 50.4830,
-        "epx": 29.761,
-        "epy": 55.948,
-        "epv": 13.519,
         "track": 359.4589,
-        "magtrack": 12.7281,
-        "magvar": 13.3,
         "speed": 0.027,
-        "climb": 0.000,
-        "eps": 1.83,
-        "epc": 27.04,
-        "ecefx": -2712542.94,
-        "ecefy": -4258214.64,
-        "ecefz": 3884445.11,
-        "ecefvx": 0.31,
-        "ecefvy": 0.53,
-        "ecefvz": 0.77,
-        "ecefpAcc": 30.17,
-        "ecefvAcc": 1.83,
-        "geoidSep": -29.900,
-        "eph": 21.721,
-        "sep": 103.170,
     }
 
 
-def test_gpspipe_to_cot_xml(sample_gps_info):
+@pytest.fixture
+def sample_config():
+    return {
+        "CALLSIGN": "edge-node-1",
+        "COT_UID": "abc123def4567890abc123def4567890",
+        "COT_URL": "udp://239.2.3.1:6969",
+        "COCKPIT_URL": "http://edge-node-1.local:9090/",
+        "SSH_USER": "pi",
+    }
+
+
+def test_gpspipe_to_cot_xml(sample_gps_info, sample_config):
     """Test converting GPS Info to CoT XML."""
-    cot = gpspipe_to_cot_xml(sample_gps_info)
+    cot = position_to_cot_xml(sample_gps_info, sample_config)
     assert isinstance(cot, ET.Element)
     assert cot.tag == "event"
     assert cot.attrib["version"] == "2.0"
     assert cot.attrib["type"] == "a-f-G-E-S"
+    assert cot.attrib["uid"] == sample_config["COT_UID"]
 
     point = cot.findall("point")
-    assert point[0].tag == "point"
     assert point[0].attrib["lat"] == "37.7600501"
     assert point[0].attrib["lon"] == "-122.4977029"
     assert point[0].attrib["hae"] == "20.626"
 
-    detail = cot.findall("detail")
-    assert detail[0].tag == "detail"
+    detail = cot.findall("detail")[0]
+    track = detail.findall("track")[0]
+    assert track.attrib["course"] == "359.4589"
+    assert track.attrib["speed"] == "0.027"
 
-    track = detail[0].findall("track")
-    assert track[0].attrib["course"] == "359.4589"
-    assert track[0].attrib["speed"] == "0.027"
+    contact = detail.findall("contact")[0]
+    assert contact.attrib["callsign"] == "edge-node-1"
+
+    remarks = detail.findall("remarks")[0]
+    assert "Cockpit:" in remarks.text
+    assert "SSH:" in remarks.text
+
+    link = detail.findall("link")[0]
+    assert link.attrib["url"] == "http://edge-node-1.local:9090"
+    assert link.attrib["relation"] == "r-u"
 
 
-def test_gpspipe_to_cot(sample_gps_info):
-    """Test converting GPS Info to CoT."""
-    cot: bytes = gpspipe_to_cot(sample_gps_info)
+def test_gpspipe_to_cot(sample_gps_info, sample_config):
+    """Test converting GPS Info to CoT bytes."""
+    cot: bytes = gpspipe_to_cot(sample_gps_info, sample_config)
     assert b"a-f-G-E-S" in cot
-    assert b"LINCOT" in cot
+    assert sample_config["COT_UID"].encode() in cot
+    assert b"edge-node-1" in cot
+
+
+def test_static_tpv():
+    """Static coordinates produce a TPV dict."""
+    config = {"STATIC_LAT": "45.0", "STATIC_LON": "-122.0", "STATIC_HAE": "100.0"}
+    assert static_position_configured(config)
+    tpv = static_tpv(config)
+    assert tpv["class"] == "TPV"
+    assert tpv["lat"] == 45.0
+    assert tpv["lon"] == -122.0
+
+
+def test_get_callsign_defaults_to_hostname(monkeypatch):
+    """Callsign defaults to hostname when unset."""
+    monkeypatch.setattr("lincot.identity.get_hostname", lambda: "myhost")
+    assert get_callsign({}) == "myhost"
+    assert get_callsign({"CALLSIGN": "custom"}) == "custom"
+
+
+def test_get_uid_from_config():
+    """UID honors COT_UID override."""
+    uid = "deadbeefdeadbeefdeadbeefdeadbeef"
+    assert get_uid({"COT_UID": uid}) == uid

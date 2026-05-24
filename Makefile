@@ -14,7 +14,8 @@
 # limitations under the License.
 #
 
-REPO_NAME ?= $(shell echo $(wildcard */__init__.py) | awk -F'/' '{print $$1}')
+REPO_NAME ?= lincot
+PY_SRC = src/$(REPO_NAME)
 SHELL := /bin/bash
 .DEFAULT_GOAL := editable
 # postinst = $(wildcard debian/*.postinst.sh)
@@ -50,18 +51,18 @@ clean:
 		*/__pycache__ deb_dist .mypy_cache
 
 pep8:
-	flake8 --max-line-length=88 --extend-ignore=E203 --exit-zero $(REPO_NAME)/*.py
+	flake8 --max-line-length=88 --extend-ignore=E203 --exit-zero $(PY_SRC)/*.py
 
 flake8: pep8
 
 lint:
 	pylint --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" \
-		--max-line-length=88 -r n $(REPO_NAME)/*.py || exit 0
+		--max-line-length=88 -r n $(PY_SRC)/*.py || exit 0
 
 pylint: lint
 
 checkmetadata:
-	python3 setup.py check -s --restructuredtext
+	python3 setup.py check -s --metadata
 
 mypy:
 	mypy --strict .

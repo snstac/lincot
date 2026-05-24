@@ -1,0 +1,13 @@
+// PatternFly 6 + Cockpit: use package-relative font URLs so Cockpit serves
+// files from dist/assets/fonts/ (see build.js copy step).
+//
+// We intentionally omit pkg/lib legacy @forward "fonts" — those @font-face rules
+// target a flat RedHat*-*.woff2 layout; @patternfly/patternfly npm uses subfolders
+// and variable fonts under ./assets/fonts (covered by @patternfly/base).
+
+$pf-v6-global--disable-fontawesome: true !default;
+
+@forward "@patternfly/patternfly/sass-utilities" with (
+    $pf-v6-global--font-path: "./assets/fonts",
+);
+@forward "@patternfly/patternfly/base";

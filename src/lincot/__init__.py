@@ -14,10 +14,28 @@
 # limitations under the License.
 #
 
-"""LINCOT Constants."""
+"""LINCOT: Linux GPS to TAK Gateway."""
 
-DEFAULT_COT_STALE: str = "3600"  # 1 hour
-DEFAULT_COT_TYPE: str = "a-f-G-E-S"
+from pathlib import Path
 
-DEFAULT_POLL_INTERVAL: int = 61
-DEFAULT_GPS_INFO_CMD: str = "gpspipe --json -n 5"
+__version__ = (
+    Path(__file__).resolve().parent.joinpath("VERSION").read_text(encoding="utf-8").strip()
+)
+
+from lincot.constants import (  # noqa: E402
+    DEFAULT_COCKPIT_PORT,
+    DEFAULT_COT_STALE,
+    DEFAULT_COT_TYPE,
+    DEFAULT_GPS_INFO_CMD,
+    DEFAULT_POLL_INTERVAL,
+    DEFAULT_SSH_USER,
+    MACHINE_ID_PATHS,
+)
+from lincot.functions import (  # noqa: E402
+    create_tasks,
+    gpspipe_to_cot,
+    gpspipe_to_cot_xml,
+    position_to_cot,
+    position_to_cot_xml,
+)
+from lincot.classes import LincotWorker  # noqa: E402

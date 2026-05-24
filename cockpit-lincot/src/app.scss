@@ -1,0 +1,37 @@
+@use "page.scss";
+
+/* Spacing between stacked expandable cards only — do not set overflow on the Card (breaks PF / scrolling). */
+.adsbcot-expandable-card {
+    margin-top: 1rem;
+}
+
+/*
+ * Configuration form: one bounded column so the parameter list scrolls but Validate & Save
+ * always stays visible below it (flex scroll region + fixed footer).
+ */
+.adsbcot-config-form-layout {
+    display: flex;
+    flex-direction: column;
+    /* Whole block (list + actions) must fit in the viewport with room for cards above this one. */
+    max-height: min(58vh, 28rem);
+    min-height: 0;
+}
+
+.adsbcot-config-body-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.adsbcot-config-actions {
+    flex: 0 0 auto;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--pf-v6-c-border--BorderColor, #c7c7c7);
+    background: var(--pf-t--global--background--color--primary--default, var(--pf-c-card--BackgroundColor, #fff));
+}
+
+p {
+    font-weight: bold;
+}

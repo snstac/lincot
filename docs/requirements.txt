@@ -1,0 +1,10 @@
+click
+ghp-import
+jinja2
+markdown
+markdown-include
+mkdocs
+mkdocs-include-markdown-plugin
+mkdocs-material
+pymdown-extensions
+pyyaml

@@ -1,0 +1,67 @@
+# Build, lint, unit tests, production .deb + source tarball; host on GitHub Actions artifacts.
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NODE_ENV: production
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install packaging tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y dpkg-dev gettext
+
+      - name: Lint, test, production bundle, .deb package
+        run: make ci
+
+      - name: Source release tarball
+        run: make dist
+
+      - name: List packages
+        run: ls -la cockpit-adsbcot*.deb cockpit-adsbcot*.tar.xz
+
+      - name: Upload packages (hosted on Actions — Artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: cockpit-adsbcot-${{ github.run_number }}-${{ github.sha }}
+          path: |
+            cockpit-adsbcot*.deb
+            cockpit-adsbcot*.tar.xz
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Summary — download artifacts
+        run: |
+          {
+            echo "### Built packages"
+            echo ""
+            echo "Artifacts are kept for **90 days**. Open this workflow run → **Artifacts** → download the zip (contains \`.deb\` and source \`.tar.xz\`)."
+            echo ""
+            echo "\`\`\`"
+            ls -la cockpit-adsbcot*.deb cockpit-adsbcot*.tar.xz || true
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,2 +1,3 @@
-include README.rst LICENSE requirements.txt
-recursive-include lincot/data *
+include README.md LICENSE
+recursive-include docs/media *
+graft src

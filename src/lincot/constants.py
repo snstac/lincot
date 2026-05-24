@@ -14,25 +14,12 @@
 # limitations under the License.
 #
 
-"""LINCOT: Linux GPS to TAK Gateway."""
+"""LINCOT Constants."""
 
-__version__ = "1.1.0"
-
-# Python 3.6 test/build work-around:
-try:
-    from .constants import (
-        DEFAULT_COT_TYPE,
-        DEFAULT_COT_STALE,
-        DEFAULT_POLL_INTERVAL,
-        DEFAULT_GPS_INFO_CMD,
-    )
-
-    from .functions import gpspipe_to_cot, create_tasks  # NOQA
-
-    from .classes import LincotWorker  # NOQA
-except ImportError:
-    import warnings
-
-    warnings.warn(
-        "Unable to import required modules, ignoring (Python 3.6 build work-around)."
-    )
+DEFAULT_COT_STALE: str = "3600"
+DEFAULT_COT_TYPE: str = "a-f-G-E-S"
+DEFAULT_POLL_INTERVAL: int = 61
+DEFAULT_GPS_INFO_CMD: str = "gpspipe --json -n 5"
+DEFAULT_SSH_USER: str = "pi"
+DEFAULT_COCKPIT_PORT: int = 9090
+MACHINE_ID_PATHS = ("/etc/machine-id", "/var/lib/dbus/machine-id")

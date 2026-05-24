@@ -1,0 +1,59 @@
+site_name: LINCOT - Linux GPS to TAK Gateway
+site_url: https://lincot.rtfd.io/
+repo_url: https://github.com/snstac/lincot/
+repo_name: snstac/lincot
+site_description: Report Linux edge node position to TAK as Cursor on Target
+site_author: Greg Albrecht <oss@undef.net>
+copyright: Copyright Sensors & Signals LLC https://www.snstac.com/
+
+theme:
+  name: material
+  logo: media/lincot_logo.svg
+  favicon: media/lincot_logo.svg
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+  palette:
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+plugins:
+  - include-markdown:
+      opening_tag: "{!"
+      closing_tag: "!}"
+  - search:
+      lang: en
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.tabbed:
+      alternate_style: true
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - Installation: installation.md
+  - Configuration: configuration.md
+  - Troubleshooting: troubleshooting.md
+  - Changelog: changelog.md
+  - License: license.md
