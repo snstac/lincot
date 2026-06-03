@@ -22,6 +22,18 @@ from urllib.parse import urlparse, urlunparse
 
 import lincot
 from lincot.identity import get_hostname, get_machine_id
+from lincot.network import get_host_ip, is_localhost_host
+
+
+def _cockpit_host(_config: Union[dict, SectionProxy, None]) -> str:
+    """Host for Cockpit URL; never localhost when an interface IP is available."""
+    ip = get_host_ip()
+    if ip:
+        return ip
+    hostname = get_hostname()
+    if hostname.lower() != "localhost":
+        return f"{hostname}.local"
+    return "0.0.0.0"
 
 
 def get_cockpit_url(config: Union[dict, SectionProxy, None]) -> str:
@@ -29,9 +41,15 @@ def get_cockpit_url(config: Union[dict, SectionProxy, None]) -> str:
     config = config or {}
     override = config.get("COCKPIT_URL")
     if override is not None and str(override).strip():
+        parsed = urlparse(str(override).strip())
+        if is_localhost_host(parsed.hostname):
+            host = _cockpit_host(config)
+            port = parsed.port or lincot.DEFAULT_COCKPIT_PORT
+            scheme = parsed.scheme or "http"
+            return f"{scheme}://{host}:{port}/"
         return str(override).strip().rstrip("/") + "/"
-    hostname = get_hostname()
-    return f"http://{hostname}.local:{lincot.DEFAULT_COCKPIT_PORT}/"
+    host = _cockpit_host(config)
+    return f"http://{host}:{lincot.DEFAULT_COCKPIT_PORT}/"
 
 
 def _sanitize_cot_url(cot_url: str) -> str:

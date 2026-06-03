@@ -1,3 +1,8 @@
+# LINCOT 1.2.3
+# -----------
+#
+# - Default Cockpit URL uses default-route or WiFi interface IP, not localhost
+
 # LINCOT 1.2.2
 # -----------
 #
