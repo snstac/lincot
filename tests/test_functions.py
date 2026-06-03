@@ -63,8 +63,8 @@ def test_gpspipe_to_cot_xml(sample_gps_info, sample_config):
     assert cot.attrib["uid"] == sample_config["COT_UID"]
 
     point = cot.findall("point")
-    assert point[0].attrib["lat"] == "37.7600501"
-    assert point[0].attrib["lon"] == "-122.4977029"
+    assert point[0].attrib["lat"] == "37.7601"
+    assert point[0].attrib["lon"] == "-122.4977"
     assert point[0].attrib["hae"] == "20.626"
 
     detail = cot.findall("detail")[0]

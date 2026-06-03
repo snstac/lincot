@@ -1,3 +1,8 @@
+# LINCOT 1.2.2
+# -----------
+#
+# - Limit CoT lat/lon output to four decimal places
+
 # LINCOT 1.2.1
 # -----------
 #

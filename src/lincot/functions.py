@@ -39,6 +39,12 @@ def _position_source(config: Union[dict, SectionProxy, None]) -> str:
     return "gpsd"
 
 
+def _format_coord(value) -> str:
+    """Format latitude/longitude with at most four decimal places."""
+    text = f"{round(float(value), 4):.4f}"
+    return text.rstrip("0").rstrip(".")
+
+
 # pylint: disable=too-many-locals
 def position_to_cot_xml(
     gps_info: dict,
@@ -63,8 +69,8 @@ def position_to_cot_xml(
     cockpit_url = get_cockpit_url(config)
 
     point = Element("point")
-    point.set("lat", str(lat))
-    point.set("lon", str(lon))
+    point.set("lat", _format_coord(lat))
+    point.set("lon", _format_coord(lon))
     point.set("hae", str(gps_info.get("altHAE") or "9999999.0"))
     point.set("le", "9999999.0")
     point.set("ce", "9999999.0")
