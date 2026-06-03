@@ -1,3 +1,9 @@
+# LINCOT 1.2.1
+# -----------
+#
+# - Fix missing VERSION file in Debian/PyPI installs (service crash on import)
+# - Add cryptography to CI test requirements (PyTAK import chain)
+
 # LINCOT 1.2.0
 # -----------
 #
