@@ -24,6 +24,21 @@ For live GNSS position via `gpspipe`:
 sudo apt install -y gpsd gpsd-clients
 ```
 
+## Red Hat / Fedora / CentOS Stream / Rocky / Alma
+
+Download the `.rpm` packages from the latest [lincot release](https://github.com/snstac/lincot/releases/latest):
+
+```sh
+sudo dnf install ./lincot-*.noarch.rpm
+```
+
+Optional Cockpit configuration UI:
+
+```sh
+wget https://github.com/snstac/cockpit-lincot/releases/latest/download/cockpit-lincot-latest.noarch.rpm
+sudo dnf install ./cockpit-lincot-latest.noarch.rpm
+```
+
 ## Python package (pip)
 
 ```sh

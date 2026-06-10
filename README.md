@@ -49,7 +49,7 @@ STATIC_LON = -122.0
 - **Position:** gpsd (`gpspipe --json`) or static lat/lon
 - **CoT detail:** remarks with Cockpit/SSH/TAK connect info; `<link>` to Cockpit URL
 - **PyTAK transports:** UDP multicast, TCP, TLS, data packages, and more
-- **Cockpit UI:** optional [cockpit-lincot](cockpit-lincot/) plugin for `/etc/default/lincot`
+- **Cockpit UI:** optional [cockpit-lincot](https://github.com/snstac/cockpit-lincot) plugin for `/etc/default/lincot`
 
 ## Documentation
 

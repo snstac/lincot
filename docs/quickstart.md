@@ -49,4 +49,4 @@ On Debian systems with the package installed:
 sudo systemctl enable --now lincot
 ```
 
-Configure via `/etc/default/lincot` or the optional **cockpit-lincot** Cockpit plugin.
+Configure via `/etc/default/lincot` or the optional [cockpit-lincot](https://github.com/snstac/cockpit-lincot) Cockpit plugin.
