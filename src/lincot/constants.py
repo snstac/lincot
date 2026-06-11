@@ -16,6 +16,10 @@
 
 """LINCOT Constants."""
 
+import socket
+
+_hostname = socket.gethostname()
+
 DEFAULT_COT_STALE: str = "3600"
 DEFAULT_COT_TYPE: str = "a-f-G-E-S"
 DEFAULT_POLL_INTERVAL: int = 61
@@ -23,3 +27,12 @@ DEFAULT_GPS_INFO_CMD: str = "gpspipe --json -n 5"
 DEFAULT_SSH_USER: str = "pi"
 DEFAULT_COCKPIT_PORT: int = 9090
 MACHINE_ID_PATHS = ("/etc/machine-id", "/var/lib/dbus/machine-id")
+
+# Sensor keep-alive / heartbeat
+DEFAULT_SENSOR_KEEPALIVE_PERIOD: int = 30
+DEFAULT_SENSOR_LAT: float = 0.0
+DEFAULT_SENSOR_LON: float = 0.0
+DEFAULT_SENSOR_HAE: float = 0.0
+DEFAULT_SENSOR_ID: str = f"lincot_{_hostname}"
+DEFAULT_SENSOR_COT_TYPE: str = "a-f-G-E-S-E"
+DEFAULT_SENSOR_PAYLOAD_TYPE: str = "GPS-Receiver"

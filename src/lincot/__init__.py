@@ -29,13 +29,21 @@ from lincot.constants import (  # noqa: E402
     DEFAULT_GPS_INFO_CMD,
     DEFAULT_POLL_INTERVAL,
     DEFAULT_SSH_USER,
+    DEFAULT_SENSOR_COT_TYPE,
+    DEFAULT_SENSOR_HAE,
+    DEFAULT_SENSOR_ID,
+    DEFAULT_SENSOR_KEEPALIVE_PERIOD,
+    DEFAULT_SENSOR_LAT,
+    DEFAULT_SENSOR_LON,
+    DEFAULT_SENSOR_PAYLOAD_TYPE,
     MACHINE_ID_PATHS,
 )
 from lincot.functions import (  # noqa: E402
     create_tasks,
+    gen_sensor_cot,
     gpspipe_to_cot,
     gpspipe_to_cot_xml,
     position_to_cot,
     position_to_cot_xml,
 )
-from lincot.classes import LincotWorker  # noqa: E402
+from lincot.classes import LincotWorker, SensorWorker  # noqa: E402
