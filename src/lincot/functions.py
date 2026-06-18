@@ -43,9 +43,8 @@ def _position_source(config: Union[dict, SectionProxy, None]) -> str:
 
 
 def _format_coord(value) -> str:
-    """Format latitude/longitude with at most four decimal places."""
-    text = f"{round(float(value), 4):.4f}"
-    return text.rstrip("0").rstrip(".")
+    """Format latitude/longitude with at most four truncated decimal places."""
+    return pytak.truncate_float(value)
 
 
 # pylint: disable=too-many-locals
@@ -171,8 +170,8 @@ def gen_sensor_cot(
     detail.append(sensor_elem)
 
     cot = pytak.gen_cot_xml(
-        lat=str(lat),
-        lon=str(lon),
+        lat=lat,
+        lon=lon,
         hae=str(hae),
         ce=ce,
         le=le,
