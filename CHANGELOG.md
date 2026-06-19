@@ -1,3 +1,9 @@
+## LinCoT 1.3.3
+
+- Add `COT_DETAIL_XML_CMD` support for structured CoT detail children on host
+  beacons. Command output is parsed as XML and ignored if invalid, preserving
+  normal beacon generation.
+
 ## LinCoT 1.3.2
 
 - Use PyTAK's shared CoT helpers for point formatting, event/detail construction,

@@ -127,6 +127,34 @@ def test_remarks_extra_cmd(sample_gps_info, sample_config, tmp_path):
     assert "Mem: 42%" in remarks.text
 
 
+def test_cot_detail_xml_cmd(sample_gps_info, sample_config, tmp_path):
+    """Dynamic XML command output is appended as structured CoT detail."""
+    script = tmp_path / "detail.sh"
+    script.write_text(
+        "#!/bin/sh\n"
+        "printf '%s\\n' '<aryaos version=\"1\"><host name=\"edge-node-1\" /></aryaos>'\n",
+        encoding="utf-8",
+    )
+    script.chmod(0o755)
+    sample_config["COT_DETAIL_XML_CMD"] = str(script)
+    cot = position_to_cot_xml(sample_gps_info, sample_config)
+    aryaos = cot.findall("detail")[0].findall("aryaos")[0]
+    assert aryaos.attrib["version"] == "1"
+    assert aryaos.findall("host")[0].attrib["name"] == "edge-node-1"
+
+
+def test_cot_detail_xml_cmd_ignores_invalid_xml(sample_gps_info, sample_config, tmp_path):
+    """Invalid dynamic XML output should not prevent normal CoT generation."""
+    script = tmp_path / "detail.sh"
+    script.write_text("#!/bin/sh\necho '<aryaos><broken></aryaos>'\n", encoding="utf-8")
+    script.chmod(0o755)
+    sample_config["COT_DETAIL_XML_CMD"] = str(script)
+    cot = position_to_cot_xml(sample_gps_info, sample_config)
+    detail = cot.findall("detail")[0]
+    assert detail.findall("aryaos") == []
+    assert detail.findall("remarks")
+
+
 def test_static_tpv():
     """Static coordinates produce a TPV dict."""
     config = {"STATIC_LAT": "45.0", "STATIC_LON": "-122.0", "STATIC_HAE": "100.0"}

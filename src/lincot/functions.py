@@ -18,6 +18,8 @@
 
 from configparser import SectionProxy
 import math
+import shlex
+import subprocess
 from typing import Optional, Union
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element
@@ -28,6 +30,43 @@ import lincot
 from lincot.identity import get_callsign, get_uid
 from lincot.position import static_position_configured
 from lincot.remarks import build_remarks, get_cockpit_url
+
+
+def _detail_children_from_command(
+    config: Union[dict, SectionProxy, None],
+) -> list[Element]:
+    """Run an optional command that emits XML detail children."""
+    config = config or {}
+    command = str(config.get("COT_DETAIL_XML_CMD") or "").strip()
+    if not command:
+        return []
+    try:
+        timeout = float(
+            config.get("COT_DETAIL_XML_CMD_TIMEOUT")
+            or lincot.DEFAULT_COT_DETAIL_XML_CMD_TIMEOUT
+        )
+    except (TypeError, ValueError):
+        timeout = lincot.DEFAULT_COT_DETAIL_XML_CMD_TIMEOUT
+    try:
+        run = subprocess.run(
+            shlex.split(command),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return []
+    if run.returncode != 0:
+        return []
+    xml_text = (run.stdout or "").strip()
+    if not xml_text:
+        return []
+    try:
+        wrapper = ET.fromstring(f"<detail-fragment>{xml_text}</detail-fragment>")
+    except ET.ParseError:
+        return []
+    return list(wrapper)
 
 
 def create_tasks(config: Union[dict, SectionProxy], clitool: pytak.CLITool) -> set:
@@ -105,6 +144,8 @@ def position_to_cot_xml(
 
     detail = pytak.cot_detail(track, contact)
     pytak.add_remarks(detail, [build_remarks(config, position_source=position_source)])
+    for child in _detail_children_from_command(config):
+        detail.append(child)
     detail.append(link)
 
     return pytak.cot_event(

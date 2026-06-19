@@ -24,6 +24,7 @@ __version__ = (
 
 from lincot.constants import (  # noqa: E402
     DEFAULT_COCKPIT_PORT,
+    DEFAULT_COT_DETAIL_XML_CMD_TIMEOUT,
     DEFAULT_COT_STALE,
     DEFAULT_COT_TYPE,
     DEFAULT_GPS_INFO_CMD,
