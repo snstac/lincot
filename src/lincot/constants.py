@@ -26,6 +26,7 @@ DEFAULT_POLL_INTERVAL: int = 61
 DEFAULT_GPS_INFO_CMD: str = "gpspipe --json -n 5"
 DEFAULT_SSH_USER: str = "pi"
 DEFAULT_COCKPIT_PORT: int = 9090
+DEFAULT_REMARKS_EXTRA_CMD_TIMEOUT: float = 2.0
 MACHINE_ID_PATHS = ("/etc/machine-id", "/var/lib/dbus/machine-id")
 
 # Sensor keep-alive / heartbeat

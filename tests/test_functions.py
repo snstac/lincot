@@ -21,10 +21,20 @@
 import xml.etree.ElementTree as ET
 
 import pytest
+import pytak
 
 from lincot.functions import gpspipe_to_cot, position_to_cot_xml
 from lincot.identity import get_callsign, get_uid
 from lincot.position import static_position_configured, static_tpv
+
+if not hasattr(pytak, "truncate_float"):
+
+    def _truncate_float(value):
+        whole, fraction = str(value).split(".", 1)
+        fraction = fraction[:4].rstrip("0")
+        return whole if not fraction else f"{whole}.{fraction}"
+
+    pytak.truncate_float = _truncate_float
 
 
 @pytest.fixture
@@ -37,6 +47,9 @@ def sample_gps_info():
         "lat": 37.760050100,
         "lon": -122.497702900,
         "altHAE": 20.6260,
+        "epx": 3.0,
+        "epy": 4.0,
+        "epv": 6.5,
         "track": 359.4589,
         "speed": 0.027,
     }
@@ -66,6 +79,8 @@ def test_gpspipe_to_cot_xml(sample_gps_info, sample_config):
     assert point[0].attrib["lat"] == "37.76"
     assert point[0].attrib["lon"] == "-122.4977"
     assert point[0].attrib["hae"] == "20.626"
+    assert point[0].attrib["ce"] == "5.0"
+    assert point[0].attrib["le"] == "6.5"
 
     detail = cot.findall("detail")[0]
     track = detail.findall("track")[0]
@@ -90,6 +105,26 @@ def test_gpspipe_to_cot(sample_gps_info, sample_config):
     assert b"a-f-G-E-S" in cot
     assert sample_config["COT_UID"].encode() in cot
     assert b"edge-node-1" in cot
+
+
+def test_gpspipe_to_cot_prefers_eph(sample_gps_info, sample_config):
+    """gpsd eph is used directly for CoT circular error when present."""
+    sample_gps_info["eph"] = 2.25
+    cot = position_to_cot_xml(sample_gps_info, sample_config)
+    point = cot.findall("point")[0]
+    assert point.attrib["ce"] == "2.25"
+
+
+def test_remarks_extra_cmd(sample_gps_info, sample_config, tmp_path):
+    """Dynamic command output is appended to remarks."""
+    script = tmp_path / "remarks.sh"
+    script.write_text("#!/bin/sh\necho 'CPU: 12%'\necho 'Mem: 42%'\n", encoding="utf-8")
+    script.chmod(0o755)
+    sample_config["REMARKS_EXTRA_CMD"] = str(script)
+    cot = position_to_cot_xml(sample_gps_info, sample_config)
+    remarks = cot.findall("detail")[0].findall("remarks")[0]
+    assert "CPU: 12%" in remarks.text
+    assert "Mem: 42%" in remarks.text
 
 
 def test_static_tpv():

@@ -17,6 +17,8 @@
 """Build CoT remarks and related URLs for edge nodes."""
 
 from configparser import SectionProxy
+import shlex
+import subprocess
 from typing import Union
 from urllib.parse import urlparse, urlunparse
 
@@ -65,6 +67,34 @@ def _sanitize_cot_url(cot_url: str) -> str:
     return urlunparse(parsed)
 
 
+def _extra_from_command(config: Union[dict, SectionProxy, None]) -> str:
+    """Run an optional remarks command and return stdout for remarks."""
+    config = config or {}
+    command = str(config.get("REMARKS_EXTRA_CMD") or "").strip()
+    if not command:
+        return ""
+    try:
+        timeout = float(
+            config.get("REMARKS_EXTRA_CMD_TIMEOUT")
+            or lincot.DEFAULT_REMARKS_EXTRA_CMD_TIMEOUT
+        )
+    except (TypeError, ValueError):
+        timeout = lincot.DEFAULT_REMARKS_EXTRA_CMD_TIMEOUT
+    try:
+        run = subprocess.run(
+            shlex.split(command),
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except (OSError, ValueError, subprocess.TimeoutExpired):
+        return ""
+    if run.returncode != 0:
+        return ""
+    return (run.stdout or "").strip()
+
+
 def build_remarks(
     config: Union[dict, SectionProxy, None],
     *,
@@ -79,6 +109,7 @@ def build_remarks(
     cot_url = _sanitize_cot_url(str(config.get("COT_URL") or ""))
     cot_host_id = str(config.get("COT_HOST_ID") or f"lincot@{hostname}")
     extra = str(config.get("REMARKS_EXTRA") or "").strip()
+    command_extra = _extra_from_command(config)
 
     lines = [
         f"Host: {hostname}",
@@ -94,5 +125,7 @@ def build_remarks(
         lines.append(f"Source: {cot_host_id}")
     if extra:
         lines.append(extra)
+    if command_extra:
+        lines.append(command_extra)
     lines.append(f"(via lincot@{hostname})")
     return "\n".join(lines)

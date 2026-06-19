@@ -17,6 +17,7 @@
 """LINCOT functions for parsing position data and generating Cursor on Target."""
 
 from configparser import SectionProxy
+import math
 from typing import Optional, Union
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import Element, tostring
@@ -47,6 +48,23 @@ def _format_coord(value) -> str:
     return pytak.truncate_float(value)
 
 
+def _horizontal_error(gps_info: dict) -> str:
+    """Return CoT circular error from gpsd TPV accuracy fields."""
+    if gps_info.get("eph") is not None:
+        return str(gps_info.get("eph"))
+    try:
+        return str(math.hypot(float(gps_info["epx"]), float(gps_info["epy"])))
+    except (KeyError, TypeError, ValueError):
+        return "9999999.0"
+
+
+def _vertical_error(gps_info: dict) -> str:
+    """Return CoT linear error from gpsd TPV vertical accuracy."""
+    if gps_info.get("epv") is not None:
+        return str(gps_info.get("epv"))
+    return "9999999.0"
+
+
 # pylint: disable=too-many-locals
 def position_to_cot_xml(
     gps_info: dict,
@@ -73,9 +91,11 @@ def position_to_cot_xml(
     point = Element("point")
     point.set("lat", _format_coord(lat))
     point.set("lon", _format_coord(lon))
-    point.set("hae", str(gps_info.get("altHAE") or "9999999.0"))
-    point.set("le", "9999999.0")
-    point.set("ce", "9999999.0")
+    point.set(
+        "hae", str(gps_info.get("altHAE") or gps_info.get("altMSL") or "9999999.0")
+    )
+    point.set("le", _vertical_error(gps_info))
+    point.set("ce", _horizontal_error(gps_info))
 
     track = Element("track")
     track.set("course", str(gps_info.get("track") or "0.0"))

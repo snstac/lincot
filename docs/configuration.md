@@ -43,6 +43,8 @@ When both `STATIC_LAT` and `STATIC_LON` are set, static mode is used instead of 
 | `COCKPIT_URL` | `http://{hostname}.local:9090/` | Cockpit URL in remarks and `<link>` |
 | `SSH_USER` | `pi` | SSH user hint in remarks |
 | `REMARKS_EXTRA` | — | Additional freeform remark text |
+| `REMARKS_EXTRA_CMD` | — | Command to run for dynamic freeform remark text; stdout is appended |
+| `REMARKS_EXTRA_CMD_TIMEOUT` | `2` | Seconds before the dynamic remarks command is abandoned |
 | `COT_HOST_ID` | `lincot@{hostname}` | Source attribution in remarks |
 
 ## PyTAK transport / TLS

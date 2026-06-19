@@ -1,3 +1,9 @@
+## LinCoT 1.3.1
+
+- Add dynamic `REMARKS_EXTRA_CMD` support for host-generated CoT remarks.
+- Populate CoT point `ce` and `le` from gpsd TPV accuracy fields.
+- Recommend `python3-gps` in Debian packages for gpsd-backed sensor position.
+
 ## LinCoT 1.3.0
 
 - Add `SensorWorker`: periodic `a-f-G-E-S-E` sensor CoT heartbeat every `SENSOR_KEEPALIVE_PERIOD` seconds (default 30).
