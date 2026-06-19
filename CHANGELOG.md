@@ -1,3 +1,9 @@
+## LinCoT 1.3.2
+
+- Use PyTAK's shared CoT helpers for point formatting, event/detail construction,
+  XML serialization, and credential-safe TAK URL display.
+- Require `pytak >= 7.3.12`.
+
 ## LinCoT 1.3.1
 
 - Add dynamic `REMARKS_EXTRA_CMD` support for host-generated CoT remarks.

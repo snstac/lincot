@@ -20,7 +20,7 @@ from configparser import SectionProxy
 import math
 from typing import Optional, Union
 import xml.etree.ElementTree as ET
-from xml.etree.ElementTree import Element, tostring
+from xml.etree.ElementTree import Element
 
 import pytak
 
@@ -41,11 +41,6 @@ def _position_source(config: Union[dict, SectionProxy, None]) -> str:
     if static_position_configured(config):
         return "static"
     return "gpsd"
-
-
-def _format_coord(value) -> str:
-    """Format latitude/longitude with at most four truncated decimal places."""
-    return pytak.truncate_float(value)
 
 
 def _horizontal_error(gps_info: dict) -> str:
@@ -88,14 +83,13 @@ def position_to_cot_xml(
     position_source = _position_source(config)
     cockpit_url = get_cockpit_url(config)
 
-    point = Element("point")
-    point.set("lat", _format_coord(lat))
-    point.set("lon", _format_coord(lon))
-    point.set(
-        "hae", str(gps_info.get("altHAE") or gps_info.get("altMSL") or "9999999.0")
+    point = pytak.cot_point(
+        lat=lat,
+        lon=lon,
+        hae=gps_info.get("altHAE") or gps_info.get("altMSL") or "9999999.0",
+        ce=_horizontal_error(gps_info),
+        le=_vertical_error(gps_info),
     )
-    point.set("le", _vertical_error(gps_info))
-    point.set("ce", _horizontal_error(gps_info))
 
     track = Element("track")
     track.set("course", str(gps_info.get("track") or "0.0"))
@@ -104,32 +98,23 @@ def position_to_cot_xml(
     contact = Element("contact")
     contact.set("callsign", cot_callsign)
 
-    remarks = Element("remarks")
-    remarks.text = build_remarks(config, position_source=position_source)
-
     link = Element("link")
     link.set("url", cockpit_url.rstrip("/"))
     link.set("relation", "r-u")
     link.set("type", cot_type)
 
-    detail = Element("detail")
-    detail.append(track)
-    detail.append(contact)
-    detail.append(remarks)
+    detail = pytak.cot_detail(track, contact)
+    pytak.add_remarks(detail, [build_remarks(config, position_source=position_source)])
     detail.append(link)
 
-    root = Element("event")
-    root.set("version", "2.0")
-    root.set("type", cot_type)
-    root.set("uid", uid)
-    root.set("how", "m-g")
-    root.set("time", pytak.cot_time())
-    root.set("start", pytak.cot_time())
-    root.set("stale", pytak.cot_time(cot_stale))
-    root.append(point)
-    root.append(detail)
-
-    return root
+    return pytak.cot_event(
+        uid=uid,
+        cot_type=cot_type,
+        stale=cot_stale,
+        point=point,
+        detail=detail,
+        access=config.get("COT_ACCESS", pytak.DEFAULT_COT_ACCESS),
+    )
 
 
 def position_to_cot(
@@ -140,9 +125,7 @@ def position_to_cot(
     """Convert position to CoT XML (TAK Protocol v0)."""
     del known_gps_info  # backward-compatible signature
     cot: Optional[Element] = position_to_cot_xml(gps_info, config)
-    return (
-        b"\n".join([pytak.DEFAULT_XML_DECLARATION, tostring(cot), b""]) if cot else None
-    )
+    return pytak.serialize_cot(cot, trailing_newline=True) if cot is not None else None
 
 
 def gpspipe_to_cot_xml(
@@ -185,11 +168,9 @@ def gen_sensor_cot(
     sensor_elem.set("sensor_id", sensor_id)
     sensor_elem.set("type", payload_type)
 
-    detail = ET.Element("detail")
-    detail.append(contact)
-    detail.append(sensor_elem)
+    detail = pytak.cot_detail(contact, sensor_elem)
 
-    cot = pytak.gen_cot_xml(
+    return pytak.cot_event(
         lat=lat,
         lon=lon,
         hae=str(hae),
@@ -198,11 +179,6 @@ def gen_sensor_cot(
         uid=f"SENSOR.{sensor_id}",
         cot_type=cot_type,
         stale=cot_stale,
+        detail=detail,
+        access=config.get("COT_ACCESS", pytak.DEFAULT_COT_ACCESS),
     )
-    cot.set("how", "m-g")
-    cot.set("access", config.get("COT_ACCESS", pytak.DEFAULT_COT_ACCESS))
-    _detail = cot.find("detail")
-    if _detail is not None:
-        cot.remove(_detail)
-    cot.append(detail)
-    return cot

@@ -20,7 +20,9 @@ from configparser import SectionProxy
 import shlex
 import subprocess
 from typing import Union
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse
+
+import pytak
 
 import lincot
 from lincot.identity import get_hostname, get_machine_id
@@ -52,19 +54,6 @@ def get_cockpit_url(config: Union[dict, SectionProxy, None]) -> str:
         return str(override).strip().rstrip("/") + "/"
     host = _cockpit_host(config)
     return f"http://{host}:{lincot.DEFAULT_COCKPIT_PORT}/"
-
-
-def _sanitize_cot_url(cot_url: str) -> str:
-    """Remove credentials from COT_URL for display in remarks."""
-    if not cot_url:
-        return ""
-    parsed = urlparse(cot_url)
-    if parsed.username or parsed.password:
-        netloc = parsed.hostname or ""
-        if parsed.port:
-            netloc = f"{netloc}:{parsed.port}"
-        parsed = parsed._replace(netloc=netloc)
-    return urlunparse(parsed)
 
 
 def _extra_from_command(config: Union[dict, SectionProxy, None]) -> str:
@@ -106,7 +95,7 @@ def build_remarks(
     machine_id = get_machine_id()
     ssh_user = str(config.get("SSH_USER") or lincot.DEFAULT_SSH_USER).strip()
     cockpit_url = get_cockpit_url(config)
-    cot_url = _sanitize_cot_url(str(config.get("COT_URL") or ""))
+    cot_url = pytak.sanitize_url_credentials(str(config.get("COT_URL") or ""))
     cot_host_id = str(config.get("COT_HOST_ID") or f"lincot@{hostname}")
     extra = str(config.get("REMARKS_EXTRA") or "").strip()
     command_extra = _extra_from_command(config)
