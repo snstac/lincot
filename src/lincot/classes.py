@@ -57,9 +57,12 @@ class LincotWorker(pytak.QueueWorker):
             self._logger.debug("No output from %s", self.gps_info_cmd)
             return
 
+        sky_data: Optional[str] = None
         for line in gpspipe_data.split("\n"):
             if "TPV" in line:
                 gps_data = line
+            elif "SKY" in line:
+                sky_data = line
 
         if not gps_data:
             self._logger.debug("No TPV record in gpspipe output")
@@ -71,6 +74,18 @@ class LincotWorker(pytak.QueueWorker):
         except json.JSONDecodeError as exc:
             self._logger.warning("Invalid GPS JSON: %s", exc)
             return
+
+        # Merge satellite/DOP quality from the SKY report so the position CoT can
+        # carry nerdy GPS detail (fix, sats used/seen, HDOP).
+        if sky_data:
+            try:
+                sky = json.loads(sky_data)
+            except json.JSONDecodeError:
+                sky = {}
+            for key in ("hdop", "pdop", "vdop", "nSat", "uSat"):
+                if sky.get(key) is not None:
+                    gps_info.setdefault(key, sky.get(key))
+
         await self.handle_data(gps_info)
 
     async def run(self, number_of_iterations=-1) -> None:

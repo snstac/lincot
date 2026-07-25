@@ -142,8 +142,38 @@ def position_to_cot_xml(
     link.set("relation", "r-u")
     link.set("type", cot_type)
 
+    # CoT precisionlocation tells TAK clients the fix is GPS-derived; __gps carries
+    # nerdy detail (fix type, sats used/seen, HDOP) for operators who want it.
+    fix = {2: "2D", 3: "3D"}.get(gps_info.get("mode"), "none")
+    precisionlocation = Element("precisionlocation")
+    precisionlocation.set("geopointsrc", "GPS" if position_source == "gpsd" else "USER")
+    precisionlocation.set("altsrc", "GPS" if position_source == "gpsd" else "USER")
+
+    gps_el = Element("__gps")
+    gps_el.set("fix", fix)
+    if gps_info.get("uSat") is not None:
+        gps_el.set("sats_used", str(gps_info.get("uSat")))
+    if gps_info.get("nSat") is not None:
+        gps_el.set("sats_seen", str(gps_info.get("nSat")))
+    if gps_info.get("hdop") is not None:
+        gps_el.set("hdop", str(gps_info.get("hdop")))
+    gps_el.set("speed_ms", str(gps_info.get("speed") or "0.0"))
+    gps_el.set("alt_m", str(gps_info.get("altHAE") or gps_info.get("altMSL") or ""))
+    gps_el.set("source", position_source)
+
+    remarks_lines = [build_remarks(config, position_source=position_source)]
+    if fix != "none":
+        gq = f"GPS: {fix} fix"
+        if gps_info.get("uSat") is not None:
+            gq += f", {gps_info.get('uSat')}/{gps_info.get('nSat')} sats"
+        if gps_info.get("hdop") is not None:
+            gq += f", HDOP {gps_info.get('hdop')}"
+        remarks_lines.append(gq)
+
     detail = pytak.cot_detail(track, contact)
-    pytak.add_remarks(detail, [build_remarks(config, position_source=position_source)])
+    pytak.add_remarks(detail, remarks_lines)
+    detail.append(precisionlocation)
+    detail.append(gps_el)
     for child in _detail_children_from_command(config):
         detail.append(child)
     detail.append(link)
