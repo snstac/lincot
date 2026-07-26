@@ -23,7 +23,9 @@ _hostname = socket.gethostname()
 DEFAULT_COT_STALE: str = "3600"
 DEFAULT_COT_TYPE: str = "a-f-G-E-S"
 DEFAULT_POLL_INTERVAL: int = 61
-DEFAULT_GPS_INFO_CMD: str = "gpspipe --json -n 5"
+# gpsd interleaves DOP-only SKY records with full-sky ones (every 3rd on a
+# u-blox 7), so a 5-record sample usually misses the satellite counts.
+DEFAULT_GPS_INFO_CMD: str = "gpspipe --json -n 12"
 DEFAULT_SSH_USER: str = "pi"
 DEFAULT_COCKPIT_PORT: int = 9090
 DEFAULT_REMARKS_EXTRA_CMD_TIMEOUT: float = 2.0

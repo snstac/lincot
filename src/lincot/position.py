@@ -16,8 +16,42 @@
 
 """Position source helpers for LINCOT."""
 
+import json
 from configparser import SectionProxy
-from typing import Optional, Union
+from typing import Any, Dict, Iterable, Optional, Union
+
+# Satellite/DOP fields worth lifting out of the gpsd SKY report.
+SKY_FIELDS = ("hdop", "pdop", "vdop", "gdop", "nSat", "uSat")
+
+
+def merge_sky(gps_info: Dict[str, Any], sky_lines: Iterable[str]) -> Dict[str, Any]:
+    """Merge satellite/DOP quality from gpsd SKY reports into a TPV dict.
+
+    gpsd emits SKY in two flavors: a full sky view carrying ``satellites`` (and
+    ``uSat``/``nSat``), and DOP-only updates in between — on a u-blox 7 only
+    every third SKY is the full one. Taking just the last SKY in a sample
+    therefore loses the satellite counts most of the time, which is exactly what
+    happened in the field (HDOP present, sats missing). So scan every SKY and
+    keep the last non-null value per field, and fall back to counting the
+    ``satellites`` array when the explicit counts are absent.
+    """
+    for line in sky_lines or []:
+        try:
+            sky = json.loads(line)
+        except (json.JSONDecodeError, TypeError):
+            continue
+
+        for key in SKY_FIELDS:
+            val = sky.get(key)
+            if val is not None:
+                gps_info[key] = val
+
+        sats = sky.get("satellites")
+        if isinstance(sats, list) and sats:
+            gps_info.setdefault("nSat", len(sats))
+            if gps_info.get("uSat") is None:
+                gps_info["uSat"] = sum(1 for s in sats if s.get("used"))
+    return gps_info
 
 
 def static_position_configured(config: Union[dict, SectionProxy, None]) -> bool:

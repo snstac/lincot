@@ -25,7 +25,7 @@ from typing import Optional
 import pytak
 
 import lincot
-from lincot.position import static_position_configured, static_tpv
+from lincot.position import merge_sky, static_position_configured, static_tpv
 
 try:
     import gpsd as _gpsd
@@ -57,12 +57,12 @@ class LincotWorker(pytak.QueueWorker):
             self._logger.debug("No output from %s", self.gps_info_cmd)
             return
 
-        sky_data: Optional[str] = None
+        sky_lines: list = []
         for line in gpspipe_data.split("\n"):
             if "TPV" in line:
                 gps_data = line
             elif "SKY" in line:
-                sky_data = line
+                sky_lines.append(line)
 
         if not gps_data:
             self._logger.debug("No TPV record in gpspipe output")
@@ -75,17 +75,7 @@ class LincotWorker(pytak.QueueWorker):
             self._logger.warning("Invalid GPS JSON: %s", exc)
             return
 
-        # Merge satellite/DOP quality from the SKY report so the position CoT can
-        # carry nerdy GPS detail (fix, sats used/seen, HDOP).
-        if sky_data:
-            try:
-                sky = json.loads(sky_data)
-            except json.JSONDecodeError:
-                sky = {}
-            for key in ("hdop", "pdop", "vdop", "nSat", "uSat"):
-                if sky.get(key) is not None:
-                    gps_info.setdefault(key, sky.get(key))
-
+        merge_sky(gps_info, sky_lines)
         await self.handle_data(gps_info)
 
     async def run(self, number_of_iterations=-1) -> None:
