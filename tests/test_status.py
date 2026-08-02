@@ -168,10 +168,10 @@ class TestStatusSurface:
         worker = _worker(tmp_path)
         worker.gps_info_cmd = "does-not-matter"
 
-        def _boom(_cmd):
+        async def _boom():
             raise OSError("no such file")
 
-        monkeypatch.setattr(classes.os, "popen", _boom)
+        monkeypatch.setattr(worker, "_read_gps_output", _boom)
         asyncio.run(worker.get_gps_info())
 
         doc = _doc(worker)
@@ -184,17 +184,10 @@ class TestStatusSurface:
         worker = _worker(tmp_path)
         worker.gps_info_cmd = "does-not-matter"
 
-        class _FakePipe:
-            def __enter__(self):
-                return self
+        async def _bad_json():
+            return '{"class":"TPV" this is not json\n'
 
-            def __exit__(self, *_):
-                return False
-
-            def read(self):
-                return '{"class":"TPV" this is not json\n'
-
-        monkeypatch.setattr(classes.os, "popen", lambda _cmd: _FakePipe())
+        monkeypatch.setattr(worker, "_read_gps_output", _bad_json)
         asyncio.run(worker.get_gps_info())
 
         doc = _doc(worker)
@@ -206,22 +199,49 @@ class TestStatusSurface:
         worker = _worker(tmp_path)
         worker.gps_info_cmd = "does-not-matter"
 
-        class _FakePipe:
-            def __enter__(self):
-                return self
+        async def _sky_only():
+            return '{"class":"SKY","hdop":1.2}\n'
 
-            def __exit__(self, *_):
-                return False
-
-            def read(self):
-                return '{"class":"SKY","hdop":1.2}\n'
-
-        monkeypatch.setattr(classes.os, "popen", lambda _cmd: _FakePipe())
+        monkeypatch.setattr(worker, "_read_gps_output", _sky_only)
         asyncio.run(worker.get_gps_info())
 
         doc = _doc(worker)
         assert doc["counters"]["no_tpv"] == 1
         assert "rx" not in doc["counters"]
+
+    def test_blocked_gps_command_times_out_and_is_killed(self, tmp_path, monkeypatch):
+        worker = _worker(tmp_path)
+        worker.config["GPS_INFO_TIMEOUT"] = "0.01"
+        worker.gps_info_cmd = "gpspipe --json -n 5"
+
+        class _BlockedProcess:
+            pid = 12345
+            returncode = None
+            killed = False
+
+            async def communicate(self):
+                if self.killed:
+                    self.returncode = -9
+                    return b"", b""
+                await asyncio.Event().wait()
+
+        proc = _BlockedProcess()
+
+        async def _create(*args, **kwargs):
+            return proc
+
+        def _killpg(pid, sig):
+            assert pid == proc.pid
+            assert sig == classes.signal.SIGKILL
+            proc.killed = True
+
+        monkeypatch.setattr(asyncio, "create_subprocess_shell", _create)
+        monkeypatch.setattr(classes.os, "killpg", _killpg)
+        asyncio.run(worker.get_gps_info())
+
+        doc = _doc(worker)
+        assert doc["counters"]["gps_cmd_timeout"] == 1
+        assert proc.killed is True
 
     def test_rate_limiting_means_the_file_can_lag_briefly(self, tmp_path):
         """Documents the 1/sec floor so nobody 'fixes' it into a write per poll."""

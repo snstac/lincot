@@ -19,6 +19,7 @@
 import asyncio
 import json
 import os
+import signal
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -143,8 +144,12 @@ class LincotWorker(pytak.QueueWorker):
         gpspipe_data: Optional[str] = None
         gps_data: Optional[str] = None
         try:
-            with os.popen(self.gps_info_cmd) as gps_info_cmd:
-                gpspipe_data = gps_info_cmd.read()
+            gpspipe_data = await self._read_gps_output()
+        except asyncio.TimeoutError:
+            self._logger.warning("GPS command timed out: %s", self.gps_info_cmd)
+            self.status.count("gps_cmd_timeout")
+            self.status.write()
+            return
         except OSError as exc:
             self._logger.warning("GPS command failed: %s", exc)
             # Each failure mode gets its own counter: "gpspipe will not run" and
@@ -184,6 +189,39 @@ class LincotWorker(pytak.QueueWorker):
 
         merge_sky(gps_info, sky_lines)
         await self.handle_data(gps_info)
+
+    async def _read_gps_output(self) -> str:
+        """Run the configured GPS command without blocking the event loop.
+
+        ``os.popen().read()`` blocked every coroutine in Lincot when gpspipe
+        waited indefinitely for an absent receiver. That included the status
+        heartbeat, so an otherwise healthy service looked wedged. Use an
+        asyncio subprocess and bound it so polling can recover too.
+        """
+        timeout = float(self.config.get("GPS_INFO_TIMEOUT", 15.0))
+        proc = await asyncio.create_subprocess_shell(
+            self.gps_info_cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            # gpspipe is launched through /bin/sh. Give the command its own
+            # process group so a timeout kills both the shell and its child;
+            # killing only the shell orphaned gpspipe with the stdout pipe open
+            # and made the subsequent communicate() wait forever.
+            start_new_session=True,
+        )
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout)
+        except asyncio.TimeoutError:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            await proc.communicate()
+            raise
+        if proc.returncode:
+            error = stderr.decode("utf-8", errors="replace").strip()
+            raise OSError(error or f"command exited {proc.returncode}")
+        return stdout.decode("utf-8", errors="replace")
 
     async def run(self, number_of_iterations=-1) -> None:
         """Run worker loop: read position and output CoT."""
