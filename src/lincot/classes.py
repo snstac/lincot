@@ -19,6 +19,8 @@
 import asyncio
 import json
 import os
+import signal
+import time
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -55,6 +57,15 @@ class _NoStatus:
         return None
 
     def set(self, *args, **kwargs) -> None:
+        return None
+
+    def set_health(self, *args, **kwargs) -> None:
+        return None
+
+    def set_input(self, *args, **kwargs) -> None:
+        return None
+
+    def set_output(self, *args, **kwargs) -> None:
         return None
 
     def write(self, *args, **kwargs) -> bool:
@@ -98,6 +109,9 @@ class LincotWorker(pytak.QueueWorker):
         # path would clobber each other, and this is the worker whose silence
         # actually means something is wrong.
         self.status = make_status("lincot", lincot.__version__)
+        self.status.set_health("degraded", "waiting for position")
+        self.status.set_input(source=self._position_source)
+        self.status.set_output("connected")
 
     async def handle_data(self, data) -> None:
         """Handle received GPS Info data."""
@@ -107,6 +121,11 @@ class LincotWorker(pytak.QueueWorker):
             return
 
         self.status.count("rx")
+        self.status.set_input(
+            last_observation=time.time(),
+            source=self._position_source,
+            fix=_fix_kind(data),
+        )
 
         event: Optional[bytes] = lincot.position_to_cot(data, self.config)
 
@@ -130,12 +149,15 @@ class LincotWorker(pytak.QueueWorker):
 
         if event:
             self.status.count("emitted")
+            self.status.set_health("ok", "position output active")
+            self.status.set_output("connected")
             self.status.write()
             await self.put_queue(event)
             return
 
         # The common indoor case: a TPV with mode 0/1 carries no lat/lon.
         self.status.count("no_fix")
+        self.status.set_health("degraded", "GNSS receiver has no position fix")
         self.status.write()
 
     async def get_gps_info(self) -> None:
@@ -143,8 +165,12 @@ class LincotWorker(pytak.QueueWorker):
         gpspipe_data: Optional[str] = None
         gps_data: Optional[str] = None
         try:
-            with os.popen(self.gps_info_cmd) as gps_info_cmd:
-                gpspipe_data = gps_info_cmd.read()
+            gpspipe_data = await self._read_gps_output()
+        except asyncio.TimeoutError:
+            self._logger.warning("GPS command timed out: %s", self.gps_info_cmd)
+            self.status.count("gps_cmd_timeout")
+            self.status.write()
+            return
         except OSError as exc:
             self._logger.warning("GPS command failed: %s", exc)
             # Each failure mode gets its own counter: "gpspipe will not run" and
@@ -184,6 +210,39 @@ class LincotWorker(pytak.QueueWorker):
 
         merge_sky(gps_info, sky_lines)
         await self.handle_data(gps_info)
+
+    async def _read_gps_output(self) -> str:
+        """Run the configured GPS command without blocking the event loop.
+
+        ``os.popen().read()`` blocked every coroutine in Lincot when gpspipe
+        waited indefinitely for an absent receiver. That included the status
+        heartbeat, so an otherwise healthy service looked wedged. Use an
+        asyncio subprocess and bound it so polling can recover too.
+        """
+        timeout = float(self.config.get("GPS_INFO_TIMEOUT", 15.0))
+        proc = await asyncio.create_subprocess_shell(
+            self.gps_info_cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            # gpspipe is launched through /bin/sh. Give the command its own
+            # process group so a timeout kills both the shell and its child;
+            # killing only the shell orphaned gpspipe with the stdout pipe open
+            # and made the subsequent communicate() wait forever.
+            start_new_session=True,
+        )
+        try:
+            stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout)
+        except asyncio.TimeoutError:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            await proc.communicate()
+            raise
+        if proc.returncode:
+            error = stderr.decode("utf-8", errors="replace").strip()
+            raise OSError(error or f"command exited {proc.returncode}")
+        return stdout.decode("utf-8", errors="replace")
 
     async def run(self, number_of_iterations=-1) -> None:
         """Run worker loop: read position and output CoT."""
