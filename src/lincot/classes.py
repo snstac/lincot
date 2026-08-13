@@ -20,6 +20,7 @@ import asyncio
 import json
 import os
 import signal
+import time
 import xml.etree.ElementTree as ET
 from typing import Optional
 
@@ -56,6 +57,15 @@ class _NoStatus:
         return None
 
     def set(self, *args, **kwargs) -> None:
+        return None
+
+    def set_health(self, *args, **kwargs) -> None:
+        return None
+
+    def set_input(self, *args, **kwargs) -> None:
+        return None
+
+    def set_output(self, *args, **kwargs) -> None:
         return None
 
     def write(self, *args, **kwargs) -> bool:
@@ -99,6 +109,9 @@ class LincotWorker(pytak.QueueWorker):
         # path would clobber each other, and this is the worker whose silence
         # actually means something is wrong.
         self.status = make_status("lincot", lincot.__version__)
+        self.status.set_health("degraded", "waiting for position")
+        self.status.set_input(source=self._position_source)
+        self.status.set_output("connected")
 
     async def handle_data(self, data) -> None:
         """Handle received GPS Info data."""
@@ -108,6 +121,11 @@ class LincotWorker(pytak.QueueWorker):
             return
 
         self.status.count("rx")
+        self.status.set_input(
+            last_observation=time.time(),
+            source=self._position_source,
+            fix=_fix_kind(data),
+        )
 
         event: Optional[bytes] = lincot.position_to_cot(data, self.config)
 
@@ -131,12 +149,15 @@ class LincotWorker(pytak.QueueWorker):
 
         if event:
             self.status.count("emitted")
+            self.status.set_health("ok", "position output active")
+            self.status.set_output("connected")
             self.status.write()
             await self.put_queue(event)
             return
 
         # The common indoor case: a TPV with mode 0/1 carries no lat/lon.
         self.status.count("no_fix")
+        self.status.set_health("degraded", "GNSS receiver has no position fix")
         self.status.write()
 
     async def get_gps_info(self) -> None:
