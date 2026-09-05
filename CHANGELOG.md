@@ -1,3 +1,8 @@
+## LinCoT 1.3.9
+
+- Add `SENSOR_BEACON=0` to disable the separate receiver marker without
+  disabling the main host beacon.
+
 ## LinCoT 1.3.3
 
 - Add `COT_DETAIL_XML_CMD` support for structured CoT detail children on host
