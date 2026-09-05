@@ -19,11 +19,18 @@
 """LINCOT Function Tests."""
 
 import xml.etree.ElementTree as ET
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 import pytak
+import lincot
 
-from lincot.functions import gpspipe_to_cot, position_to_cot_xml
+from lincot.functions import (
+    gpspipe_to_cot,
+    position_to_cot_xml,
+    sensor_beacon_enabled,
+)
 from lincot.identity import get_callsign, get_uid
 from lincot.position import static_position_configured, static_tpv
 
@@ -64,6 +71,24 @@ def sample_config():
         "COCKPIT_URL": "http://edge-node-1.local:9090/",
         "SSH_USER": "pi",
     }
+
+
+@pytest.mark.parametrize("value", ["0", "false", "False", "no", "off"])
+def test_sensor_beacon_switch(value):
+    """Receiver beacons default on and accept common false values."""
+    assert sensor_beacon_enabled({})
+    assert not sensor_beacon_enabled({"SENSOR_BEACON": value})
+
+
+def test_create_tasks_can_omit_sensor_beacon():
+    """Disabling the receiver beacon keeps the host beacon enabled."""
+    clitool = SimpleNamespace(tx_queue=object())
+    with patch.object(lincot, "LincotWorker", return_value="host"), patch.object(
+        lincot, "SensorWorker", return_value="receiver"
+    ) as sensor_worker:
+        tasks = lincot.functions.create_tasks({"SENSOR_BEACON": "0"}, clitool)
+    assert tasks == {"host"}
+    sensor_worker.assert_not_called()
 
 
 def test_gpspipe_to_cot_xml(sample_gps_info, sample_config):

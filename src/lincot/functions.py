@@ -32,6 +32,12 @@ from lincot.position import static_position_configured
 from lincot.remarks import build_remarks, get_cockpit_url
 
 
+def sensor_beacon_enabled(config: Union[dict, SectionProxy]) -> bool:
+    """Return whether the periodic receiver beacon is enabled."""
+    value = config.get("SENSOR_BEACON", "1")
+    return str(value).strip().lower() not in {"0", "false", "no", "off"}
+
+
 def _detail_children_from_command(
     config: Union[dict, SectionProxy, None],
 ) -> list[Element]:
@@ -72,7 +78,8 @@ def _detail_children_from_command(
 def create_tasks(config: Union[dict, SectionProxy], clitool: pytak.CLITool) -> set:
     """Bootstrap coroutine tasks for this PyTAK application."""
     tasks = {lincot.LincotWorker(clitool.tx_queue, config)}
-    tasks.add(lincot.SensorWorker(clitool.tx_queue, config))
+    if sensor_beacon_enabled(config):
+        tasks.add(lincot.SensorWorker(clitool.tx_queue, config))
     return tasks
 
 

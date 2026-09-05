@@ -35,6 +35,7 @@ When both `STATIC_LAT` and `STATIC_LON` are set, static mode is used instead of 
 |-----|---------|-------------|
 | `COT_TYPE` | `a-f-G-E-S` | CoT event type |
 | `COT_STALE` | `3600` | Stale time in seconds |
+| `SENSOR_BEACON` | `1` | Set `0` to disable the separate receiver marker |
 
 ## Edge node metadata (remarks + link)
 
