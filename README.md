@@ -47,7 +47,9 @@ STATIC_LON = -122.0
 
 - **Identity:** callsign defaults to hostname; CoT UID defaults to `/etc/machine-id`
 - **Position:** gpsd (`gpspipe --json`) or static lat/lon
-- **CoT detail:** remarks with Cockpit/SSH/TAK connect info; `<link>` to Cockpit URL
+- **CoT detail:** remarks with Cockpit/SSH/TAK connect info; `<link>` to Cockpit URL; `<__gps>` fix/satellite/HDOP detail
+- **Receiver beacon:** optional separate `a-f-G-E-S-E` marker for the GPS receiver (`SENSOR_BEACON=0` to disable)
+- **Runtime status:** `/run/lincot/status.json` tells a searching GPS from a dead one
 - **PyTAK transports:** UDP multicast, TCP, TLS, data packages, and more
 - **Cockpit UI:** optional [cockpit-lincot](https://github.com/snstac/cockpit-lincot) plugin for `/etc/default/lincot`
 
