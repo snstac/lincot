@@ -17,6 +17,7 @@
 """Position source helpers for LINCOT."""
 
 import json
+import math
 from configparser import SectionProxy
 from typing import Any, Dict, Iterable, Optional, Union
 
@@ -54,6 +55,14 @@ def merge_sky(gps_info: Dict[str, Any], sky_lines: Iterable[str]) -> Dict[str, A
     return gps_info
 
 
+def first_present(*values: Any) -> Any:
+    """Return the first value that is not None or blank; 0.0 counts."""
+    for value in values:
+        if value is not None and str(value).strip():
+            return value
+    return None
+
+
 def static_position_configured(config: Union[dict, SectionProxy, None]) -> bool:
     """Return True when STATIC_LAT and STATIC_LON are both set."""
     config = config or {}
@@ -72,10 +81,19 @@ def static_tpv(config: Union[dict, SectionProxy, None]) -> Optional[dict]:
     if not static_position_configured(config):
         return None
     config = config or {}
+    try:
+        lat = float(config.get("STATIC_LAT"))
+        lon = float(config.get("STATIC_LON"))
+    except ValueError:
+        return None
+    if not (math.isfinite(lat) and math.isfinite(lon)):
+        return None
+    if not (-90.0 <= lat <= 90.0 and -180.0 <= lon <= 180.0):
+        return None
     return {
         "class": "TPV",
-        "lat": float(config.get("STATIC_LAT")),
-        "lon": float(config.get("STATIC_LON")),
+        "lat": lat,
+        "lon": lon,
         "altHAE": config.get("STATIC_HAE") or "9999999.0",
         "track": config.get("STATIC_COURSE") or "0.0",
         "speed": config.get("STATIC_SPEED") or "0.0",

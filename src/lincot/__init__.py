@@ -19,10 +19,12 @@
 from pathlib import Path
 
 __version__ = (
-    Path(__file__).resolve().parent.joinpath("VERSION").read_text(encoding="utf-8").strip()
+    Path(__file__).resolve().parent.joinpath("VERSION")
+    .read_text(encoding="utf-8")
+    .strip()
 )
 
-from lincot.constants import (  # noqa: E402
+from lincot.constants import (  # noqa: E402,F401
     DEFAULT_COCKPIT_PORT,
     DEFAULT_COT_DETAIL_XML_CMD_TIMEOUT,
     DEFAULT_COT_STALE,
@@ -40,7 +42,7 @@ from lincot.constants import (  # noqa: E402
     DEFAULT_SENSOR_PAYLOAD_TYPE,
     MACHINE_ID_PATHS,
 )
-from lincot.functions import (  # noqa: E402
+from lincot.functions import (  # noqa: E402,F401
     create_tasks,
     gen_sensor_cot,
     gpspipe_to_cot,
@@ -48,4 +50,4 @@ from lincot.functions import (  # noqa: E402
     position_to_cot,
     position_to_cot_xml,
 )
-from lincot.classes import LincotWorker, SensorWorker  # noqa: E402
+from lincot.classes import LincotWorker, SensorWorker  # noqa: E402,F401
