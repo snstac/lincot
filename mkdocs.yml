@@ -55,5 +55,6 @@ nav:
   - Installation: installation.md
   - Configuration: configuration.md
   - Troubleshooting: troubleshooting.md
+  - Releasing: releasing.md
   - Changelog: changelog.md
   - License: license.md

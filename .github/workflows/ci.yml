@@ -1,10 +1,24 @@
 name: CI
 
+# Tag pushes build and publish. A manual run (workflow_dispatch) is a dry run:
+# it runs the tests and builds every release artifact -- sdist/wheel, .deb and
+# .rpm -- but no job that publishes can run on it. See docs/releasing.md.
+#
+# PyPI trusted publishing is bound to THIS file name (ci.yml) and the `pypi`
+# environment. Renaming either breaks the next release with
+# `invalid-publisher`; tests/test_ci_workflow.py guards both.
+
 on:
   push:
     branches: ['**']
     tags: ['*']
   pull_request:
+  workflow_dispatch:
+
+# Read-only by default. Write scopes are granted per job, only to the jobs
+# that publish, and those jobs only run on a tag push.
+permissions:
+  contents: read
 
 jobs:
 
@@ -31,10 +45,45 @@ jobs:
       - name: Test with pytest-cov
         run: make test_cov
 
+  # Runs on every push and PR, so a broken sdist/wheel or a VERSION that does
+  # not match the tag is caught before tagging rather than by a failed release.
+  build-dist:
+    name: Build Python distribution
+    needs: test
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install build tools
+        run: python3 -m pip install build twine
+      - name: Build sdist and wheel
+        run: python3 -m build
+      - name: Check distribution metadata
+        run: python3 -m twine check --strict dist/*
+      - name: Check src/lincot/VERSION matches the tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          version="$(cat src/lincot/VERSION)"
+          echo "VERSION=${version}"
+          ls dist/ | grep -F -- "-${version}" >/dev/null || {
+            echo "::error::dist/ has no files for version ${version}"; exit 1; }
+          if [ "${REF_TYPE}" = "tag" ] && [ "${REF_NAME#v}" != "${version}" ]; then
+            echo "::error::tag ${REF_NAME} does not match VERSION ${version}"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: artifact-dist
+          path: dist/
+
   package-deb:
     name: Build Debian Package
     needs: test
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
     env:
       DEB_BUILD_OPTIONS: nocheck
@@ -52,7 +101,7 @@ jobs:
   package-rpm:
     name: Build RPM Package
     needs: test
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-22.04
     container:
       image: fedora:latest
@@ -67,31 +116,29 @@ jobs:
           name: artifact-rpm
           path: dist/*.rpm
 
+  # Uploads exactly the files build-dist checked; no checkout, no rebuild.
   package-pypi:
     name: Publish to PyPI
-    needs: test
-    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-dist
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-22.04
     environment:
       name: pypi
+      url: https://pypi.org/project/lincot/
     permissions:
       id-token: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/download-artifact@v4
         with:
-          python-version: '3.x'
-      - name: Install build tools
-        run: pip install build
-      - name: Build distribution
-        run: python3 -m build
+          name: artifact-dist
+          path: dist/
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
   release:
     name: Create GitHub Release
     needs: [package-deb, package-rpm]
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-22.04
     permissions:
       contents: write
@@ -108,3 +155,26 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/*
+
+  dry-run:
+    name: Dry run summary (nothing published)
+    needs: [build-dist, package-deb, package-rpm]
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+      - name: List built artifacts
+        run: |
+          {
+            echo "### Release dry run for ${GITHUB_REF_NAME}"
+            echo
+            echo "Built, not published. PyPI and GitHub Release jobs run only"
+            echo "on a tag push."
+            echo
+            echo '```'
+            find artifacts -type f | sort
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          find artifacts -type f | sort
