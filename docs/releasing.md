@@ -11,7 +11,7 @@ pushed. The same workflow can be run by hand as a **dry run**.
 | `build-dist` (sdist + wheel, `twine check --strict`, VERSION check) | every push, PR, dispatch | no |
 | `package-deb`, `package-rpm` | tag push, dispatch | no |
 | `package-pypi` | **tag push only** | PyPI |
-| `release` (GitHub Release with `.deb`/`.rpm`) | **tag push only** | GitHub Releases |
+| `release` (GitHub Release with `.deb`/`.rpm`; waits for `build-dist`) | **tag push only** | GitHub Releases |
 
 On a tag push `build-dist` fails if the tag (minus a leading `v`) does not
 match `src/lincot/VERSION`, so a mismatched tag never reaches PyPI.
@@ -58,8 +58,13 @@ while tests, the `.deb`/`.rpm` builds and the GitHub Release all succeeded, and
 why PyPI still shows 1.0.3. Renaming `ci.yml` or the `pypi` environment
 reintroduces this failure.
 
-After the publisher is registered, re-run the failed **Publish to PyPI** job
-on the existing tag run; no new tag is needed.
+**This is a PyPI-side setting; no change to the workflow can fix it.** Add a
+regular (not "pending") publisher, since the `lincot` project already exists.
+
+Once it is registered the next tag push publishes normally. Tags that already
+failed cannot be published from the workflow: GitHub only allows re-running a
+job within 30 days of the original run, and a dry run never publishes. Ship
+the changes in the next version (for example `v1.3.10`) instead.
 
 ## Cutting a release
 

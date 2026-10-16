@@ -33,8 +33,7 @@ the dry run depend on, so they cannot drift silently:
 from pathlib import Path
 
 import pytest
-
-yaml = pytest.importorskip("yaml")
+import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
 WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
@@ -45,9 +44,9 @@ PYPI_WORKFLOW_FILE = "ci.yml"
 PYPI_ENVIRONMENT = "pypi"
 
 PUBLISH_ACTIONS = ("pypa/gh-action-pypi-publish", "softprops/action-gh-release")
-TAG_PUSH_ONLY = (
-    "github.event_name == 'push'",
-    "startsWith(github.ref, 'refs/tags/')",
+TAG_PUSH_ONLY = "github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')"
+TAG_OR_DISPATCH = (
+    "startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'"
 )
 
 
@@ -104,8 +103,7 @@ def test_workflow_dispatch_dry_run_exists(workflow):
 @pytest.mark.parametrize("name", ["build-dist", "package-deb", "package-rpm"])
 def test_dry_run_builds_every_release_artifact(workflow, name):
     job = workflow["jobs"][name]
-    cond = job.get("if", "")
-    assert not cond or "workflow_dispatch" in cond, cond
+    assert job.get("if") in (None, TAG_OR_DISPATCH), job.get("if")
     assert not _publishes(job)
 
 
@@ -118,10 +116,13 @@ def test_every_publishing_job_is_tag_push_only(workflow):
     publishers = {n: j for n, j in workflow["jobs"].items() if _publishes(j)}
     assert {"package-pypi", "release"} <= set(publishers)
     for name, job in publishers.items():
-        cond = job.get("if", "")
-        for clause in TAG_PUSH_ONLY:
-            assert clause in cond, f"{name}: {cond!r} lacks {clause!r}"
-        assert "workflow_dispatch" not in cond
+        # Exact match: a substring check would accept `... || ...`.
+        assert job.get("if") == TAG_PUSH_ONLY, name
+
+
+def test_release_waits_for_version_check(workflow):
+    """A tag that does not match VERSION must not produce a GitHub Release."""
+    assert "build-dist" in workflow["jobs"]["release"]["needs"]
 
 
 def test_pypi_uploads_the_checked_build(workflow):

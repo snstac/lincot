@@ -137,7 +137,7 @@ jobs:
 
   release:
     name: Create GitHub Release
-    needs: [package-deb, package-rpm]
+    needs: [build-dist, package-deb, package-rpm]
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-22.04
     permissions:
