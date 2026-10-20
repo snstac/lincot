@@ -27,7 +27,13 @@ from typing import Optional
 import pytak
 
 import lincot
-from lincot.position import merge_sky, static_position_configured, static_tpv
+from lincot.position import (
+    first_present,
+    merge_sky,
+    static_position_configured,
+    static_tpv,
+)
+from lincot.settings import config_number
 
 try:
     import gpsd as _gpsd
@@ -137,7 +143,7 @@ class LincotWorker(pytak.QueueWorker):
             fix=_fix_kind(data),
             lat=data.get("lat"),
             lon=data.get("lon"),
-            alt=data.get("altHAE") or data.get("altMSL"),
+            alt=first_present(data.get("altHAE"), data.get("altMSL")),
             speed=data.get("speed"),
             track=data.get("track"),
             sats_used=data.get("uSat"),
@@ -219,7 +225,9 @@ class LincotWorker(pytak.QueueWorker):
         heartbeat, so an otherwise healthy service looked wedged. Use an
         asyncio subprocess and bound it so polling can recover too.
         """
-        timeout = float(self.config.get("GPS_INFO_TIMEOUT", 15.0))
+        timeout = config_number(
+            self.config, "GPS_INFO_TIMEOUT", 15.0, cast=float, minimum=0.001
+        )
         proc = await asyncio.create_subprocess_shell(
             self.gps_info_cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -252,8 +260,12 @@ class LincotWorker(pytak.QueueWorker):
             return
         self._logger.info("Sending to: %s", cot_url)
 
-        poll_interval: int = int(
-            self.config.get("POLL_INTERVAL", lincot.DEFAULT_POLL_INTERVAL)
+        poll_interval: int = config_number(
+            self.config,
+            "POLL_INTERVAL",
+            lincot.DEFAULT_POLL_INTERVAL,
+            cast=int,
+            minimum=1,
         )
         self.gps_info_cmd = self.config.get("GPS_INFO_CMD", lincot.DEFAULT_GPS_INFO_CMD)
         use_static = static_position_configured(self.config)
@@ -281,6 +293,15 @@ class LincotWorker(pytak.QueueWorker):
                     tpv = static_tpv(self.config)
                     if tpv:
                         await self.handle_data(tpv)
+                    else:
+                        self._logger.warning(
+                            "STATIC_LAT/STATIC_LON are not valid coordinates."
+                        )
+                        self.status.count("bad_static_position")
+                        self.status.set_health(
+                            "degraded", "STATIC_LAT/STATIC_LON are invalid"
+                        )
+                        self.status.write()
                 else:
                     self._logger.info(
                         "Sending position from %s to %s every %s seconds.",
@@ -307,12 +328,21 @@ class LincotWorker(pytak.QueueWorker):
 
 
 class SensorWorker(pytak.QueueWorker):
-    """Periodic sensor CoT heartbeat. Sources position from gpsd, config, or null island."""
+    """Periodic sensor CoT heartbeat.
+
+    Position comes from gpsd, then SENSOR_LAT/LON, then STATIC_LAT/LON, then
+    null island.
+    """
 
     async def run(self, _=-1) -> None:
         """Run worker loop: emit sensor beacon CoT at configured interval."""
-        period = int(self.config.get(
-            "SENSOR_KEEPALIVE_PERIOD", lincot.DEFAULT_SENSOR_KEEPALIVE_PERIOD))
+        period = config_number(
+            self.config,
+            "SENSOR_KEEPALIVE_PERIOD",
+            lincot.DEFAULT_SENSOR_KEEPALIVE_PERIOD,
+            cast=int,
+            minimum=1,
+        )
         self._logger.info(
             "Running SensorWorker (period=%ds, gpsd=%s)", period, _gpsd is not None)
         while True:
@@ -323,7 +353,7 @@ class SensorWorker(pytak.QueueWorker):
             await asyncio.sleep(period)
 
     async def _get_position(self):
-        """Resolve sensor position: gpsd → static config → null island."""
+        """Resolve sensor position: gpsd → SENSOR_* → STATIC_* → null island."""
         if _gpsd is not None:
             try:
                 result = await asyncio.to_thread(self._poll_gpsd)
@@ -331,9 +361,18 @@ class SensorWorker(pytak.QueueWorker):
                     return result
             except Exception as exc:
                 self._logger.debug("gpsd unavailable: %s", exc)
-        lat = float(self.config.get("SENSOR_LAT") or lincot.DEFAULT_SENSOR_LAT)
-        lon = float(self.config.get("SENSOR_LON") or lincot.DEFAULT_SENSOR_LON)
-        hae = float(self.config.get("SENSOR_HAE") or lincot.DEFAULT_SENSOR_HAE)
+        sensor_set = any(
+            config_number(self.config, key, None) is not None
+            for key in ("SENSOR_LAT", "SENSOR_LON")
+        )
+        prefix = "SENSOR"
+        if not sensor_set and static_tpv(self.config):
+            # A fixed site without a usable SENSOR_* position: put the receiver
+            # marker with the host, not at null island.
+            prefix = "STATIC"
+        lat = config_number(self.config, f"{prefix}_LAT", lincot.DEFAULT_SENSOR_LAT)
+        lon = config_number(self.config, f"{prefix}_LON", lincot.DEFAULT_SENSOR_LON)
+        hae = config_number(self.config, f"{prefix}_HAE", lincot.DEFAULT_SENSOR_HAE)
         return lat, lon, hae, "9999999.0", "9999999.0"
 
     @staticmethod
@@ -351,6 +390,7 @@ class SensorWorker(pytak.QueueWorker):
             hae = packet.altitude()
         except Exception:
             hae = 0.0
-        ce = str(getattr(packet, "error", {}).get("x", "9999999.0") or "9999999.0")
-        le = str(getattr(packet, "error", {}).get("v", "9999999.0") or "9999999.0")
+        error = getattr(packet, "error", None) or {}
+        ce = str(first_present(error.get("x"), "9999999.0"))
+        le = str(first_present(error.get("v"), "9999999.0"))
         return lat, lon, hae, ce, le

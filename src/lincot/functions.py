@@ -28,7 +28,8 @@ import pytak
 
 import lincot
 from lincot.identity import get_callsign, get_uid
-from lincot.position import static_position_configured
+from lincot.position import first_present, static_position_configured
+from lincot.settings import config_number
 from lincot.remarks import build_remarks, get_cockpit_url
 
 
@@ -123,7 +124,9 @@ def position_to_cot_xml(
         return None
 
     cot_type: str = str(config.get("COT_TYPE") or lincot.DEFAULT_COT_TYPE)
-    cot_stale: int = int(config.get("COT_STALE") or lincot.DEFAULT_COT_STALE)
+    cot_stale: int = config_number(
+        config, "COT_STALE", int(lincot.DEFAULT_COT_STALE), cast=int, minimum=1
+    )
     cot_callsign: str = get_callsign(config)
     uid: str = get_uid(config)
     position_source = _position_source(config)
@@ -132,7 +135,7 @@ def position_to_cot_xml(
     point = pytak.cot_point(
         lat=lat,
         lon=lon,
-        hae=gps_info.get("altHAE") or gps_info.get("altMSL") or "9999999.0",
+        hae=first_present(gps_info.get("altHAE"), gps_info.get("altMSL"), "9999999.0"),
         ce=_horizontal_error(gps_info),
         le=_vertical_error(gps_info),
     )
@@ -165,14 +168,17 @@ def position_to_cot_xml(
     if gps_info.get("hdop") is not None:
         gps_el.set("hdop", str(gps_info.get("hdop")))
     gps_el.set("speed_ms", str(gps_info.get("speed") or "0.0"))
-    gps_el.set("alt_m", str(gps_info.get("altHAE") or gps_info.get("altMSL") or ""))
+    alt_m = first_present(gps_info.get("altHAE"), gps_info.get("altMSL"))
+    gps_el.set("alt_m", "" if alt_m is None else str(alt_m))
     gps_el.set("source", position_source)
 
     remarks_lines = [build_remarks(config, position_source=position_source)]
     if fix != "none":
         gq = f"GPS: {fix} fix"
-        if gps_info.get("uSat") is not None:
+        if gps_info.get("uSat") is not None and gps_info.get("nSat") is not None:
             gq += f", {gps_info.get('uSat')}/{gps_info.get('nSat')} sats"
+        elif gps_info.get("uSat") is not None:
+            gq += f", {gps_info.get('uSat')} sats used"
         if gps_info.get("hdop") is not None:
             gq += f", HDOP {gps_info.get('hdop')}"
         remarks_lines.append(gq)
@@ -233,11 +239,15 @@ def gen_sensor_cot(
 ):
     """Generate a periodic sensor beacon CoT (a-f-G-E-S-E)."""
     config = config or {}
-    sensor_id = config.get("SENSOR_ID", lincot.DEFAULT_SENSOR_ID)
-    cot_type = config.get("SENSOR_COT_TYPE", lincot.DEFAULT_SENSOR_COT_TYPE)
-    cot_stale = int(config.get("COT_STALE", pytak.DEFAULT_COT_STALE))
-    callsign = config.get("SENSOR_CALLSIGN", sensor_id)
-    payload_type = config.get("SENSOR_PAYLOAD_TYPE", lincot.DEFAULT_SENSOR_PAYLOAD_TYPE)
+    sensor_id = config.get("SENSOR_ID") or lincot.DEFAULT_SENSOR_ID
+    cot_type = config.get("SENSOR_COT_TYPE") or lincot.DEFAULT_SENSOR_COT_TYPE
+    cot_stale = config_number(
+        config, "COT_STALE", int(pytak.DEFAULT_COT_STALE), cast=int, minimum=1
+    )
+    callsign = config.get("SENSOR_CALLSIGN") or sensor_id
+    payload_type = (
+        config.get("SENSOR_PAYLOAD_TYPE") or lincot.DEFAULT_SENSOR_PAYLOAD_TYPE
+    )
 
     contact = ET.Element("contact")
     contact.set("callsign", callsign)
