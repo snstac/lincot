@@ -2,18 +2,20 @@
 
 ## Debian / Ubuntu / Raspberry Pi
 
+Install from the signed snstac apt repository (lincot packages are no longer
+served from public GitHub releases):
+
 ```sh
-wget https://github.com/snstac/pytak/releases/latest/download/pytak_latest_all.deb
-sudo apt install -f ./pytak_latest_all.deb
-wget https://github.com/snstac/lincot/releases/latest/download/python3-lincot_latest_all.deb
-sudo apt install -f ./python3-lincot_latest_all.deb
+sudo curl -fsSL -o /usr/share/keyrings/snstac.gpg https://snstac.github.io/packages/snstac.gpg
+sudo curl -fsSL -o /etc/apt/sources.list.d/snstac.sources https://snstac.github.io/packages/snstac.sources
+sudo apt update
+sudo apt install lincot
 ```
 
 Optional Cockpit configuration UI:
 
 ```sh
-wget https://github.com/snstac/cockpit-lincot/releases/latest/download/cockpit-lincot_latest_all.deb
-sudo apt install -f ./cockpit-lincot_latest_all.deb
+sudo apt install cockpit-lincot
 ```
 
 ### GPS (gpsd) mode
@@ -26,17 +28,17 @@ sudo apt install -y gpsd gpsd-clients
 
 ## Red Hat / Fedora / CentOS Stream / Rocky / Alma
 
-Download the `.rpm` packages from the latest [lincot release](https://github.com/snstac/lincot/releases/latest):
+Install from the signed snstac yum/dnf repository:
 
 ```sh
-sudo dnf install ./lincot-*.noarch.rpm
+sudo curl -fsSL -o /etc/yum.repos.d/snstac.repo https://snstac.github.io/packages/snstac.repo
+sudo dnf install lincot
 ```
 
 Optional Cockpit configuration UI:
 
 ```sh
-wget https://github.com/snstac/cockpit-lincot/releases/latest/download/cockpit-lincot-latest.noarch.rpm
-sudo dnf install ./cockpit-lincot-latest.noarch.rpm
+sudo dnf install cockpit-lincot
 ```
 
 ## Python package (pip)
@@ -48,6 +50,8 @@ python3 -m pip install lincot
 Requires Python 3.9+ and PyTAK 7.x.
 
 ## From source
+
+The source repository is private (org members only). With access:
 
 ```sh
 git clone https://github.com/snstac/lincot.git

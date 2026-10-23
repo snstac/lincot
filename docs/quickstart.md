@@ -13,10 +13,10 @@ Get a Linux edge node position onto the TAK network in a few minutes.
 === "Debian / Ubuntu"
 
     ```sh
-    wget https://github.com/snstac/pytak/releases/latest/download/pytak_latest_all.deb
-    sudo apt install -f ./pytak_latest_all.deb
-    wget https://github.com/snstac/lincot/releases/latest/download/python3-lincot_latest_all.deb
-    sudo apt install -f ./python3-lincot_latest_all.deb
+    sudo curl -fsSL -o /usr/share/keyrings/snstac.gpg https://snstac.github.io/packages/snstac.gpg
+    sudo curl -fsSL -o /etc/apt/sources.list.d/snstac.sources https://snstac.github.io/packages/snstac.sources
+    sudo apt update
+    sudo apt install lincot
     ```
 
 See [Installation](installation.md) for PyTAK dependency details.
